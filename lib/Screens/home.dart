@@ -97,7 +97,7 @@ class _HomeState extends State<Home> {
                 onTap: () {
                   Navigator.pop(context);
                   showSuccessSnackBar(context, 'Logged out successfully');
-                  // Navigate to login page
+                  // Navigate to login page using named route after a short delay
                   Future.delayed(const Duration(seconds: 1), () {
                     Navigator.pushReplacementNamed(context, '/login');
                   });
