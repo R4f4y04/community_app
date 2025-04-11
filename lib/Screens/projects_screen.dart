@@ -288,53 +288,64 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
                               const SizedBox(height: 16),
 
-                              // Team members
+                              // Team members - Fixed the negative padding issue
                               Row(
                                 children: [
-                                  for (int i = 0;
-                                      i < 3 &&
-                                          i <
-                                              (project['members'] as List)
-                                                  .length;
-                                      i++)
-                                    Padding(
-                                      padding: EdgeInsets.only(
-                                          left: i > 0 ? -8.0 : 0),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: Colors.primaries[
-                                            i % Colors.primaries.length],
-                                        child: Text(
-                                          (project['members'][i] as String)
-                                              .substring(0, 1),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
+                                  // Using a properly sized Stack with absolute positioning
+                                  SizedBox(
+                                    width:
+                                        88, // Width for 4 avatars with spacing
+                                    height: 32, // Height for avatars
+                                    child: Stack(
+                                      children: [
+                                        for (int i = 0;
+                                            i <
+                                                    (project['members'] as List)
+                                                        .length &&
+                                                i < 3;
+                                            i++)
+                                          Positioned(
+                                            left: i *
+                                                22.0, // Ensure positive spacing
+                                            child: CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: Colors.primaries[
+                                                  i % Colors.primaries.length],
+                                              child: Text(
+                                                (project['members'][i]
+                                                        as String)
+                                                    .substring(0, 1),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  if ((project['members'] as List).length >
-                                      3) ...[
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(left: -8.0),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor:
-                                            AppColors.surfaceVariant,
-                                        child: Text(
-                                          '+${(project['members'] as List).length - 3}',
-                                          style: const TextStyle(
-                                            color: AppColors.textPrimary,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
+                                        if ((project['members'] as List)
+                                                .length >
+                                            3)
+                                          Positioned(
+                                            left: 3 *
+                                                22.0, // Ensure positive spacing
+                                            child: CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor:
+                                                  AppColors.surfaceVariant,
+                                              child: Text(
+                                                '+${(project['members'] as List).length - 3}',
+                                                style: const TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                   const Spacer(),
                                   TextButton.icon(
                                     onPressed: () {
