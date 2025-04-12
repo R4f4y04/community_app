@@ -2,6 +2,8 @@ import 'package:dbms_proj/Screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -22,21 +25,48 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Sign in function with improved error message handling
-  void _signIn() {
-    // This is a placeholder for your actual authentication logic
+  // Test sign in function that prints request and response
+  Future<void> _signIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       showErrorSnackBar(context, 'Please enter both email and password');
-    } else {
-      // You can implement actual login logic here
-      // For now, just show a success message
-      showSuccessSnackBar(context, 'Login successful');
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const Home(), // Replace with your home screen
-        ),
+      return;
+    }
+
+    // Create request body
+    final Map<String, String> requestBody = {
+      'email': _emailController.text.trim(),
+      'password': _passwordController.text.trim(),
+    };
+
+    // Print request data to terminal
+    print('Sending login request with data:');
+    print(jsonEncode(requestBody));
+
+    try {
+      // Send POST request to Node-RED server
+      // Replace with your actual Node-RED endpoint
+      final response = await http.post(
+        Uri.parse(
+            'http://192.168.100.189:1880/login'), // Use your actual IP/port
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
       );
+
+      // Print response to terminal
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      // Show result as snackbar for testing
+      if (response.statusCode == 200) {
+        showSuccessSnackBar(context, 'Request successful');
+      } else {
+        showErrorSnackBar(
+            context, 'Request failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Print error to terminal
+      print('Error making request: $e');
+      showErrorSnackBar(context, 'Connection error: ${e.toString()}');
     }
   }
 
@@ -175,12 +205,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 30),
 
-                // Login Button
+                // Login Button with loading state
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
-                    onPressed: _signIn,
+                    onPressed: _isLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPurple,
                       foregroundColor: Colors.white,
@@ -190,14 +220,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    child: const Text(
-                      'SIGN IN',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          )
+                        : const Text(
+                            'SIGN IN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                   ),
                 ),
 
