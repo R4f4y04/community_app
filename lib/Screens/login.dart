@@ -32,41 +32,68 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Create request body
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Create request body - use exact values from database for testing
     final Map<String, String> requestBody = {
       'email': _emailController.text.trim(),
       'password': _passwordController.text.trim(),
     };
 
-    // Print request data to terminal
-    print('Sending login request with data:');
-    print(jsonEncode(requestBody));
+    // Enhanced debugging
+    print('===== LOGIN ATTEMPT =====');
+    print(
+        'Email: "${requestBody['email']}"'); // Quotes show any trailing spaces
+    print('Password: "${requestBody['password']}"');
+    print('JSON payload: ${jsonEncode(requestBody)}');
 
     try {
       // Send POST request to Node-RED server
-      // Replace with your actual Node-RED endpoint
       final response = await http.post(
-        Uri.parse(
-            'http://192.168.100.189:1880/login'), // Use your actual IP/port
+        Uri.parse('http://192.168.100.189:1880/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
 
-      // Print response to terminal
-      print('Response status code: ${response.statusCode}');
+      // Enhanced response logging
+      print('===== SERVER RESPONSE =====');
+      print('Status code: ${response.statusCode}');
       print('Response body: ${response.body}');
 
-      // Show result as snackbar for testing
+      // Attempt to parse JSON response
+      Map<String, dynamic>? responseData;
+      try {
+        if (response.body.isNotEmpty) {
+          responseData = jsonDecode(response.body);
+          print('Decoded JSON: $responseData');
+        }
+      } catch (e) {
+        print('Failed to parse response as JSON: $e');
+      }
+
+      // Handle response
       if (response.statusCode == 200) {
-        showSuccessSnackBar(context, 'Request successful');
+        showSuccessSnackBar(
+            context, responseData?['message'] ?? 'Login successful');
+
+        // Navigate to home screen
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
+        // Show error from response if available
         showErrorSnackBar(
-            context, 'Request failed with status: ${response.statusCode}');
+            context,
+            responseData?['message'] ??
+                'Login failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      // Print error to terminal
       print('Error making request: $e');
       showErrorSnackBar(context, 'Connection error: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
