@@ -98,9 +98,9 @@ class _HomeState extends State<Home> {
                   Navigator.pop(context);
                   showSuccessSnackBar(context, 'Logged out successfully');
                   // Navigate to login page using named route after a short delay
-                  Future.delayed(const Duration(seconds: 1), () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  });
+                  Navigator.pushReplacementNamed(context, '/login');
+                  // Uncomment the line below if you want to navigate to login page directly
+                  // Navigator.pushReplacementNamed(context, '/login');
                 },
               ),
             ],
