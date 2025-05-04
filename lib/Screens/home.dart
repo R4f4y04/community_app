@@ -5,6 +5,7 @@ import 'package:dbms_proj/util/functions.dart';
 import 'package:dbms_proj/Screens/feed_screen.dart';
 import 'package:dbms_proj/Screens/chat_screen.dart';
 import 'package:dbms_proj/Screens/projects_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -94,7 +95,8 @@ class _HomeState extends State<Home> {
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.purpleLight),
                 title: const Text('Logout'),
-                onTap: () {
+                onTap: () async {
+                  await Supabase.instance.client.auth.signOut();
                   Navigator.pop(context);
                   showSuccessSnackBar(context, 'Logged out successfully');
                   // Navigate to login page using named route after a short delay
