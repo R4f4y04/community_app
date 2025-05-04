@@ -2,8 +2,10 @@ import 'package:dbms_proj/Screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Get Supabase client instance
+final supabase = Supabase.instance.client;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Test sign in function that prints request and response
+  // Sign in with Supabase
   Future<void> _signIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       showErrorSnackBar(context, 'Please enter both email and password');
@@ -36,61 +38,49 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // Create request body - use exact values from database for testing
-    final Map<String, String> requestBody = {
-      'email': _emailController.text.trim(),
-      'password': _passwordController.text.trim(),
-    };
-
-    // Enhanced debugging
-    print('===== LOGIN ATTEMPT =====');
-    print(
-        'Email: "${requestBody['email']}"'); // Quotes show any trailing spaces
-    print('Password: "${requestBody['password']}"');
-    print('JSON payload: ${jsonEncode(requestBody)}');
-
     try {
-      // Send POST request to Node-RED server
-      final response = await http.post(
-        Uri.parse('http://192.168.100.189:1880/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+      // Get email and password from text controllers
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      // Log for debugging (remove in production)
+      print('===== LOGIN ATTEMPT WITH SUPABASE =====');
+      print('Email: "$email"');
+
+      // Sign in with Supabase authentication
+      final response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
 
-      // Enhanced response logging
-      print('===== SERVER RESPONSE =====');
-      print('Status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      // Get user from response
+      final user = response.user;
+      final session = response.session;
 
-      // Attempt to parse JSON response
-      Map<String, dynamic>? responseData;
-      try {
-        if (response.body.isNotEmpty) {
-          responseData = jsonDecode(response.body);
-          print('Decoded JSON: $responseData');
-        }
-      } catch (e) {
-        print('Failed to parse response as JSON: $e');
-      }
+      // Log authentication success
+      print('===== SUPABASE RESPONSE =====');
+      print('Auth successful: ${user != null}');
 
-      // Handle response
-      if (response.statusCode == 200) {
-        showSuccessSnackBar(
-            context, responseData?['message'] ?? 'Login successful');
+      if (user != null) {
+        // Successful login
+        showSuccessSnackBar(context, 'Login successful');
 
-        // Navigate to home screen
+        // Navigate to home screen after short delay
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        // Show error from response if available
-        showErrorSnackBar(
-            context,
-            responseData?['message'] ??
-                'Login failed with status: ${response.statusCode}');
+        // This shouldn't typically happen (Supabase throws exceptions on auth failure)
+        showErrorSnackBar(context, 'Authentication failed');
       }
+    } on AuthException catch (error) {
+      // Handle Supabase Auth exceptions
+      print('Auth error: ${error.message}');
+      showErrorSnackBar(context, error.message);
     } catch (e) {
-      print('Error making request: $e');
-      showErrorSnackBar(context, 'Connection error: ${e.toString()}');
+      // Handle other errors
+      print('Error: $e');
+      showErrorSnackBar(context, 'An unexpected error occurred');
     } finally {
+      // Reset loading state
       setState(() {
         _isLoading = false;
       });
@@ -175,11 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  obscuringCharacter: '?',
-                  style: TextStyle(
-                      color: _obscurePassword
-                          ? Colors.pinkAccent[700]
-                          : AppColors.textPrimary),
+                  style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Enter your password',
@@ -221,8 +207,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Let's use our info snackbar to show a message
-                      showInfoSnackBar(context, 'Password reset coming soon!');
+                      // Using Supabase password reset
+                      final email = _emailController.text.trim();
+                      if (email.isEmpty) {
+                        showErrorSnackBar(
+                            context, 'Please enter your email first');
+                      } else {
+                        // Send password reset email
+                        supabase.auth.resetPasswordForEmail(email);
+                        showInfoSnackBar(context,
+                            'Password reset instructions sent to your email');
+                      }
                     },
                     child: const Text(
                       'Forgot Password?',
@@ -279,7 +274,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        // Navigate to registration screen (to be implemented)
+                        // Show sign up info for now
+                        // You can implement sign up with Supabase in the future
                         showInfoSnackBar(context, 'Sign up coming soon!');
                       },
                       child: const Text(
