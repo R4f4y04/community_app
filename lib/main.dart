@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/Screens/login.dart';
 import 'package:dbms_proj/Screens/home.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
+  await Supabase.initialize(
+    url: 'https://qsqypgtgrbdqugjjbzvb.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzcXlwZ3RncmJkcXVnampienZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzk1NDksImV4cCI6MjA2MTk1NTU0OX0.RXhtwIaHMif_42idt8YM7hLX0pETfU_lksXPJkhuj3c',
+  );
   runApp(const MainApp());
 }
 
