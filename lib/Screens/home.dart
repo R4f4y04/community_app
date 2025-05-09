@@ -5,6 +5,7 @@ import 'package:dbms_proj/util/functions.dart';
 import 'package:dbms_proj/Screens/feed_screen.dart';
 import 'package:dbms_proj/Screens/chat_screen.dart';
 import 'package:dbms_proj/Screens/projects_screen.dart';
+import 'package:dbms_proj/Screens/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Home extends StatefulWidget {
@@ -78,8 +79,12 @@ class _HomeState extends State<Home> {
                 title: const Text('View Profile'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Navigate to profile page (to be implemented)
-                  showInfoSnackBar(context, 'Profile page coming soon!');
+                  // Navigate to profile page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileScreen()),
+                  );
                 },
               ),
               ListTile(
