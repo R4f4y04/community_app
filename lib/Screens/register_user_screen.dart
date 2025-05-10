@@ -49,6 +49,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
       final response = await supabase.from('department').select('*');
       setState(() {
         _departments = List<Map<String, dynamic>>.from(response);
+        // Print for debugging
+        print('Fetched departments: $_departments');
       });
     } catch (e) {
       print('Error fetching departments: $e');
@@ -250,15 +252,19 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         border: OutlineInputBorder(),
                       ),
                       value: _selectedDepartmentId,
-                      items: _departments.map((department) {
-                        return DropdownMenuItem<String>(
-                          value: department['id'].toString(),
-                          child: Text(department['name']),
-                        );
-                      }).toList(),
+                      items: _departments.isEmpty
+                          ? []
+                          : _departments.map((department) {
+                              return DropdownMenuItem<String>(
+                                value: department['id'].toString(),
+                                child: Text(
+                                    department['name'] ?? 'Unknown Department'),
+                              );
+                            }).toList(),
                       onChanged: (value) {
                         setState(() {
                           _selectedDepartmentId = value;
+                          print('Selected department ID: $value');
                         });
                       },
                       hint: const Text('Select Department'),
