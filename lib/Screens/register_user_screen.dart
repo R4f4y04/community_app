@@ -25,7 +25,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
   final TextEditingController _roleController = TextEditingController();
 
   // Department selection
-  String? _selectedDepartmentId;
+  int? _selectedDepartmentId;
   List<Map<String, dynamic>> _departments = [];
 
   @override
@@ -43,17 +43,16 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     super.dispose();
   }
 
-  // Fetch departments from Supabase
   Future<void> _fetchDepartments() async {
     try {
-      final response = await supabase.from('department').select('*');
+      final response = await supabase
+          .from('department')
+          .select('departmentid, name')
+          .order('name');
       setState(() {
         _departments = List<Map<String, dynamic>>.from(response);
-        // Print for debugging
-        print('Fetched departments: $_departments');
       });
     } catch (e) {
-      print('Error fetching departments: $e');
       showErrorSnackBar(context, 'Failed to load departments');
     }
   }
@@ -75,13 +74,9 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
 
     try {
       // 1. Create user in Supabase Auth
-      final authResponse = await supabase.auth.admin.createUser(
-        AdminUserAttributes(
+      final authResponse = await supabase.auth.signUp(
           email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          emailConfirm: true,
-        ),
-      );
+          password: _passwordController.text.trim());
 
       final newUser = authResponse.user;
       if (newUser == null) {
@@ -244,7 +239,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                     const SizedBox(height: 16),
 
                     // Department Dropdown
-                    DropdownButtonFormField<String>(
+                    DropdownButtonFormField<int>(
                       decoration: const InputDecoration(
                         labelText: 'Department',
                         prefixIcon:
@@ -252,24 +247,20 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         border: OutlineInputBorder(),
                       ),
                       value: _selectedDepartmentId,
-                      items: _departments.isEmpty
-                          ? []
-                          : _departments.map((department) {
-                              return DropdownMenuItem<String>(
-                                value: department['id'].toString(),
-                                child: Text(
-                                    department['name'] ?? 'Unknown Department'),
-                              );
-                            }).toList(),
+                      items: _departments.map((department) {
+                        return DropdownMenuItem<int>(
+                          value: department['departmentid'],
+                          child: Text(department['name'] ?? 'Unknown'),
+                        );
+                      }).toList(),
                       onChanged: (value) {
                         setState(() {
                           _selectedDepartmentId = value;
-                          print('Selected department ID: $value');
                         });
                       },
                       hint: const Text('Select Department'),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value == null) {
                           return 'Please select a department';
                         }
                         return null;
@@ -285,7 +276,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                           prefixIcon:
                               Icon(Icons.work, color: AppColors.purpleLight),
                           border: OutlineInputBorder(),
-                          hintText: 'e.g., Student, Professor, Assistant'),
+                          hintText: 'e.g. Team Leader, Team Member'),
                     ),
                     const SizedBox(height: 32),
 
