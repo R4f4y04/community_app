@@ -1,3 +1,4 @@
+import 'package:dbms_proj/Screens/register_user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -208,6 +209,22 @@ class _HomeState extends State<Home> {
                   }
                 },
               ),
+              if (_isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.person_add,
+                      color: AppColors.purpleLight),
+                  title: const Text('Register New User'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to register new user page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterUserScreen(),
+                      ),
+                    );
+                  },
+                ),
               ListTile(
                 leading:
                     const Icon(Icons.settings, color: AppColors.purpleLight),
