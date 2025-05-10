@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:uuid/uuid.dart';
 
 // Get Supabase client instance
 final supabase = Supabase.instance.client;
@@ -20,7 +16,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _isEditing = false;
-  bool _isUploadingImage = false;
   final _formKey = GlobalKey<FormState>();
 
   // User data
@@ -35,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _roleController;
   late TextEditingController _degreeDetailsController;
   String? _profileImageUrl;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -171,101 +165,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SnackBar(content: Text('Error updating profile: ${e.toString()}')),
           );
         }
-      }
-    }
-  }
-
-  // Upload profile image to Supabase storage
-  Future<void> _uploadProfileImage() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _isUploadingImage = true;
-      });
-
-      // Pick image from gallery
-      final pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedImage == null) {
-        setState(() {
-          _isLoading = false;
-          _isUploadingImage = false;
-        });
-        return;
-      }
-
-      // Get file extension
-      final fileExt =
-          path.extension(pickedImage.path).replaceFirst('.', '').toLowerCase();
-      final allowedExtensions = ['jpg', 'jpeg', 'png'];
-
-      if (!allowedExtensions.contains(fileExt)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Only JPG and PNG images are allowed')),
-          );
-          setState(() {
-            _isLoading = false;
-            _isUploadingImage = false;
-          });
-        }
-        return;
-      }
-
-      // Read file as bytes
-      final fileBytes = await pickedImage.readAsBytes();
-
-      // Create a unique file path in Storage
-      final userId = supabase.auth.currentUser!.id;
-      final uuid = const Uuid()
-          .v4(); // Generate unique identifier to avoid caching issues
-      final filePath = 'profile_images/$userId/$uuid.$fileExt';
-
-      // Upload the file
-      await supabase.storage.from('avatars').uploadBinary(
-            filePath,
-            fileBytes,
-            fileOptions: FileOptions(
-              upsert: true,
-              contentType: 'image/${fileExt == 'jpg' ? 'jpeg' : fileExt}',
-            ),
-          );
-
-      // Get the public URL of the uploaded file
-      final imageUrlResponse =
-          supabase.storage.from('avatars').getPublicUrl(filePath);
-
-      // Save the public URL to the profile
-      await supabase
-          .from('profile')
-          .update({'profilepicture': imageUrlResponse}).eq('userid', userId);
-
-      // Update local state to immediately reflect changes
-      setState(() {
-        _profileImageUrl = imageUrlResponse;
-      });
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isUploadingImage = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isUploadingImage = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Error uploading profile picture: ${e.toString()}')),
-        );
       }
     }
   }
@@ -518,21 +417,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: AppColors.surface,
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.camera_alt,
-                                color: AppColors.purpleLight,
-                              ),
-                              onPressed: _uploadProfileImage,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
