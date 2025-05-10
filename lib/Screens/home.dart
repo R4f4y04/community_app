@@ -1,3 +1,4 @@
+import 'package:dbms_proj/Screens/register_user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -30,6 +31,7 @@ class _HomeState extends State<Home> {
   String _userInitials = '';
   String _userName = 'User';
   String _departmentName = '';
+  bool _isAdmin = false;
 
   // List of section titles for app bar
   final List<String> _sectionTitles = [
@@ -83,6 +85,7 @@ class _HomeState extends State<Home> {
         _profileImageUrl = _profileData?['profilepicture'];
         _userName = _userData?['name'] ?? 'User';
         _departmentName = _departmentData?['name'] ?? '';
+        _isAdmin = _userData?['isadmin'] == true;
 
         // Generate initials from name
         _userInitials = _getUserInitials(_userName);
@@ -205,6 +208,22 @@ class _HomeState extends State<Home> {
                   }
                 },
               ),
+              if (_isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.person_add,
+                      color: AppColors.purpleLight),
+                  title: const Text('Register New User'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to register new user page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegisterUserScreen(),
+                      ),
+                    );
+                  },
+                ),
               ListTile(
                 leading:
                     const Icon(Icons.settings, color: AppColors.purpleLight),

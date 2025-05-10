@@ -22,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _userData;
   Map<String, dynamic>? _profileData;
   Map<String, dynamic>? _departmentData;
+  bool _isAdmin = false;
 
   // Form controllers
   late TextEditingController _nameController;
@@ -83,6 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _profileData = data['profile']; // Lowercase to match database schema
         _departmentData =
             data['department']; // Lowercase to match database schema
+        _isAdmin = _userData?['isadmin'] == true;
 
         // Set controller values with lowercase field names to match schema
         _nameController.text = _userData?['name'] ?? '';
@@ -308,6 +310,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.textSecondary,
                       ),
                 ),
+                const SizedBox(height: 8),
+                // Admin role
+                if (_isAdmin)
+                  Text(
+                    'Admin',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.primaryPurple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
               ],
             ),
           ),
