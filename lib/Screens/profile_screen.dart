@@ -73,23 +73,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Fetch user data with profile and department info
       final data = await supabase
-          .from('Users')
-          .select('*, Profile(*), Department(*)')
-          .eq('UserID', user.id)
+          .from('users')
+          .select('*, profile(*), department(*)')
+          .eq('userid', user.id)
           .single();
 
       setState(() {
         _userData = data;
-        _profileData = data['Profile'];
-        _departmentData = data['Department'];
+        _profileData = data['profile']; // Lowercase to match database schema
+        _departmentData =
+            data['department']; // Lowercase to match database schema
 
-        // Set controller values
-        _nameController.text = _userData?['Name'] ?? '';
-        _bioController.text = _profileData?['Bio'] ?? '';
-        _instituteController.text = _profileData?['Institute'] ?? '';
-        _roleController.text = _profileData?['Role'] ?? '';
-        _degreeDetailsController.text = _profileData?['DegreeDetails'] ?? '';
-        _profileImageUrl = _profileData?['ProfilePicture'];
+        // Set controller values with lowercase field names to match schema
+        _nameController.text = _userData?['name'] ?? '';
+        _bioController.text = _profileData?['bio'] ?? '';
+        _instituteController.text = _profileData?['institute'] ?? '';
+        _roleController.text = _profileData?['role'] ?? '';
+        _degreeDetailsController.text = _profileData?['degreedetails'] ?? '';
+        _profileImageUrl = _profileData?['profilepicture'];
 
         _isLoading = false;
       });
@@ -104,50 +105,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Update profile in Supabase
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      
+      try {
+        setState(() {
+          _isLoading = true;
+        });
 
-    setState(() {
-      _isLoading = true;
-    });
+        final supabase = Supabase.instance.client;
+        final userId = supabase.auth.currentUser!.id;
 
-    try {
-      // Get current user ID
-      final userId = supabase.auth.currentUser?.id;
+        // Update profile data with lowercase column names
+        await supabase
+            .from('profile')
+            .update({
+              'bio': _bioController.text,
+              'institute': _instituteController.text,
+              'role': _roleController.text,
+              'degreedetails': _degreeDetailsController.text,
+            })
+            .eq('userid', userId);
 
-      if (userId == null) {
-        showErrorSnackBar(context, 'User not authenticated');
-        return;
+        // Update user's name
+        await supabase
+            .from('users')
+            .update({
+              'name': _nameController.text,
+            })
+            .eq('userid', userId);  // Changed from 'id' to 'userid' to match database schema
+
+        setState(() {
+          // Update local data to reflect changes
+          if (_userData != null) {
+            _userData!['name'] = _nameController.text;
+          }
+          
+          if (_profileData != null) {
+            _profileData!['bio'] = _bioController.text;
+            _profileData!['institute'] = _instituteController.text;
+            _profileData!['role'] = _roleController.text;
+            _profileData!['degreedetails'] = _degreeDetailsController.text;
+          }
+          
+          _isEditing = false;
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating profile: ${e.toString()}')),
+          );
+        }
       }
-
-      // Update Users table
-      await supabase.from('Users').update({
-        'Name': _nameController.text,
-      }).eq('UserID', userId);
-
-      // Update Profile table
-      await supabase.from('Profile').update({
-        'Bio': _bioController.text,
-        'Institute': _instituteController.text,
-        'Role': _roleController.text,
-        'DegreeDetails': _degreeDetailsController.text,
-      }).eq('UserID', userId);
-
-      showSuccessSnackBar(context, 'Profile updated successfully');
-
-      // Refresh profile data
-      await _fetchUserProfile();
-
-      setState(() {
-        _isEditing = false;
-      });
-    } catch (e) {
-      print('Error updating profile: $e');
-      showErrorSnackBar(context, 'Failed to update profile');
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -184,14 +203,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         setState(() {
                           _isEditing = false;
-                          // Reset controllers to original values
-                          _nameController.text = _userData?['Name'] ?? '';
-                          _bioController.text = _profileData?['Bio'] ?? '';
+                          // Reset controllers to original values with lowercase field names to match schema
+                          _nameController.text = _userData?['name'] ?? '';
+                          _bioController.text = _profileData?['bio'] ?? '';
                           _instituteController.text =
-                              _profileData?['Institute'] ?? '';
-                          _roleController.text = _profileData?['Role'] ?? '';
+                              _profileData?['institute'] ?? '';
+                          _roleController.text = _profileData?['role'] ?? '';
                           _degreeDetailsController.text =
-                              _profileData?['DegreeDetails'] ?? '';
+                              _profileData?['degreedetails'] ?? '';
                         });
                       },
                       style: ElevatedButton.styleFrom(
@@ -219,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Profile view mode
   Widget _buildProfileView() {
-    String initials = (_userData?['Name'] ?? 'User')
+    String initials = (_userData?['name'] ?? 'User')
         .split(' ')
         .map((e) => e.isNotEmpty ? e[0] : '')
         .join('')
@@ -228,6 +247,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (initials.length > 2) {
       initials = initials.substring(0, 2);
     }
+
+    // Validate profile image URL more strictly
+    bool hasValidImageUrl = _profileImageUrl != null && 
+        _profileImageUrl!.isNotEmpty && 
+        Uri.parse(_profileImageUrl!).hasScheme &&
+        (Uri.parse(_profileImageUrl!).scheme == 'http' || 
+         Uri.parse(_profileImageUrl!).scheme == 'https');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -244,10 +270,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: AppColors.purpleLight,
-                    backgroundImage: _profileImageUrl != null
+                    backgroundImage: hasValidImageUrl
                         ? NetworkImage(_profileImageUrl!)
                         : null,
-                    child: _profileImageUrl == null
+                    child: !hasValidImageUrl
                         ? Text(
                             initials,
                             style: const TextStyle(
@@ -262,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 // Name
                 Text(
-                  _userData?['Name'] ?? 'User',
+                  _userData?['name'] ?? 'User',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -270,7 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 8),
                 // Department
                 Text(
-                  _departmentData?['Name'] ?? 'Department',
+                  _departmentData?['name'] ?? 'Department',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -278,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 8),
                 // Email
                 Text(
-                  _userData?['Email'] ?? 'email@example.com',
+                  _userData?['email'] ?? 'email@example.com',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -289,33 +315,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 32),
 
           // Bio section
-          if (_profileData?['Bio'] != null && _profileData?['Bio'].isNotEmpty)
+          if (_profileData?['bio'] != null && _profileData?['bio'].isNotEmpty)
             _buildProfileSection(
               'About Me',
-              _profileData?['Bio'] ?? '',
+              _profileData?['bio'] ?? '',
             ),
 
           // Institute section
-          if (_profileData?['Institute'] != null &&
-              _profileData?['Institute'].isNotEmpty)
+          if (_profileData?['institute'] != null &&
+              _profileData?['institute'].isNotEmpty)
             _buildProfileSection(
               'Institute',
-              _profileData?['Institute'] ?? '',
+              _profileData?['institute'] ?? '',
             ),
 
           // Role section
-          if (_profileData?['Role'] != null && _profileData?['Role'].isNotEmpty)
+          if (_profileData?['role'] != null && _profileData?['role'].isNotEmpty)
             _buildProfileSection(
               'Role',
-              _profileData?['Role'] ?? '',
+              _profileData?['role'] ?? '',
             ),
 
           // Degree details section
-          if (_profileData?['DegreeDetails'] != null &&
-              _profileData?['DegreeDetails'].isNotEmpty)
+          if (_profileData?['degreedetails'] != null &&
+              _profileData?['degreedetails'].isNotEmpty)
             _buildProfileSection(
               'Degree Details',
-              _profileData?['DegreeDetails'] ?? '',
+              _profileData?['degreedetails'] ?? '',
             ),
         ],
       ),
@@ -363,15 +389,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: AppColors.purpleLight,
-                    backgroundImage: _profileImageUrl != null
-                        ? NetworkImage(_profileImageUrl!)
-                        : null,
+                    backgroundImage: (_profileImageUrl != null && 
+                        _profileImageUrl!.isNotEmpty && 
+                        Uri.parse(_profileImageUrl!).hasScheme &&
+                        (Uri.parse(_profileImageUrl!).scheme == 'http' || 
+                         Uri.parse(_profileImageUrl!).scheme == 'https')
+                        ) ? NetworkImage(_profileImageUrl!) : null,
                     child: Stack(
                       children: [
-                        if (_profileImageUrl == null)
+                        if (_profileImageUrl == null || _profileImageUrl!.isEmpty || 
+                            !Uri.parse(_profileImageUrl!).hasScheme ||
+                            (Uri.parse(_profileImageUrl!).scheme != 'http' && 
+                             Uri.parse(_profileImageUrl!).scheme != 'https'))
                           Center(
                             child: Text(
-                              (_userData?['Name'] ?? 'User')
+                              (_userData?['name'] ?? 'User')
                                   .split(' ')
                                   .map((e) => e.isNotEmpty ? e[0] : '')
                                   .join('')
