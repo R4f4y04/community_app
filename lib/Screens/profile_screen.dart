@@ -22,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _userData;
   Map<String, dynamic>? _profileData;
   Map<String, dynamic>? _departmentData;
+  bool _isAdmin = false; // Flag to track admin status
 
   // Form controllers
   late TextEditingController _nameController;
@@ -83,6 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _profileData = data['profile']; // Lowercase to match database schema
         _departmentData =
             data['department']; // Lowercase to match database schema
+        _isAdmin = _userData?['isadmin'] == true; // Set admin status
 
         // Set controller values with lowercase field names to match schema
         _nameController.text = _userData?['name'] ?? '';
@@ -308,6 +310,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.textSecondary,
                       ),
                 ),
+                const SizedBox(height: 16),
+                // Admin Badge
+                if (_isAdmin)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPurple,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryPurple.withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.admin_panel_settings,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Administrator',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -348,7 +386,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Helper method to build a profile section
-  Widget _buildProfileSection(String title, String content) {
+  Widget _buildProfileSection(String title, String content,
+      {bool isHighlighted = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -363,8 +402,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 8),
         Text(
           content,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
+            color: title == 'Role' ? AppColors.primaryPurple : null,
+            fontWeight: title == 'Role' ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         const SizedBox(height: 24),
