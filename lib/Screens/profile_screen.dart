@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 // Get Supabase client instance
 final supabase = Supabase.instance.client;
@@ -16,6 +20,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _isEditing = false;
+  bool _isUploadingImage = false;
   final _formKey = GlobalKey<FormState>();
 
   // User data
@@ -30,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _roleController;
   late TextEditingController _degreeDetailsController;
   String? _profileImageUrl;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -107,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      
+
       try {
         setState(() {
           _isLoading = true;
@@ -117,37 +123,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final userId = supabase.auth.currentUser!.id;
 
         // Update profile data with lowercase column names
-        await supabase
-            .from('profile')
-            .update({
-              'bio': _bioController.text,
-              'institute': _instituteController.text,
-              'role': _roleController.text,
-              'degreedetails': _degreeDetailsController.text,
-            })
-            .eq('userid', userId);
+        await supabase.from('profile').update({
+          'bio': _bioController.text,
+          'institute': _instituteController.text,
+          'role': _roleController.text,
+          'degreedetails': _degreeDetailsController.text,
+        }).eq('userid', userId);
 
         // Update user's name
-        await supabase
-            .from('users')
-            .update({
-              'name': _nameController.text,
-            })
-            .eq('userid', userId);  // Changed from 'id' to 'userid' to match database schema
+        await supabase.from('users').update({
+          'name': _nameController.text,
+        }).eq('userid',
+            userId); // Changed from 'id' to 'userid' to match database schema
 
         setState(() {
           // Update local data to reflect changes
           if (_userData != null) {
             _userData!['name'] = _nameController.text;
           }
-          
+
           if (_profileData != null) {
             _profileData!['bio'] = _bioController.text;
             _profileData!['institute'] = _instituteController.text;
             _profileData!['role'] = _roleController.text;
             _profileData!['degreedetails'] = _degreeDetailsController.text;
           }
-          
+
           _isEditing = false;
           _isLoading = false;
         });
@@ -156,6 +157,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully')),
           );
+
+          // Return to the previous screen with result
+          Navigator.pop(
+              context, true); // Return true to indicate profile was updated
         }
       } catch (e) {
         if (mounted) {
@@ -166,6 +171,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SnackBar(content: Text('Error updating profile: ${e.toString()}')),
           );
         }
+      }
+    }
+  }
+
+  // Upload profile image to Supabase storage
+  Future<void> _uploadProfileImage() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _isUploadingImage = true;
+      });
+
+      // Pick image from gallery
+      final pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedImage == null) {
+        setState(() {
+          _isLoading = false;
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Get file extension
+      final fileExt =
+          path.extension(pickedImage.path).replaceFirst('.', '').toLowerCase();
+      final allowedExtensions = ['jpg', 'jpeg', 'png'];
+
+      if (!allowedExtensions.contains(fileExt)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Only JPG and PNG images are allowed')),
+          );
+          setState(() {
+            _isLoading = false;
+            _isUploadingImage = false;
+          });
+        }
+        return;
+      }
+
+      // Read file as bytes
+      final fileBytes = await pickedImage.readAsBytes();
+
+      // Create a unique file path in Storage
+      final userId = supabase.auth.currentUser!.id;
+      final uuid = const Uuid()
+          .v4(); // Generate unique identifier to avoid caching issues
+      final filePath = 'profile_images/$userId/$uuid.$fileExt';
+
+      // Upload the file
+      await supabase.storage.from('avatars').uploadBinary(
+            filePath,
+            fileBytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: 'image/${fileExt == 'jpg' ? 'jpeg' : fileExt}',
+            ),
+          );
+
+      // Get the public URL of the uploaded file
+      final imageUrlResponse =
+          supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      // Save the public URL to the profile
+      await supabase
+          .from('profile')
+          .update({'profilepicture': imageUrlResponse}).eq('userid', userId);
+
+      // Update local state to immediately reflect changes
+      setState(() {
+        _profileImageUrl = imageUrlResponse;
+      });
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isUploadingImage = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isUploadingImage = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Error uploading profile picture: ${e.toString()}')),
+        );
       }
     }
   }
@@ -249,11 +349,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     // Validate profile image URL more strictly
-    bool hasValidImageUrl = _profileImageUrl != null && 
-        _profileImageUrl!.isNotEmpty && 
+    bool hasValidImageUrl = _profileImageUrl != null &&
+        _profileImageUrl!.isNotEmpty &&
         Uri.parse(_profileImageUrl!).hasScheme &&
-        (Uri.parse(_profileImageUrl!).scheme == 'http' || 
-         Uri.parse(_profileImageUrl!).scheme == 'https');
+        (Uri.parse(_profileImageUrl!).scheme == 'http' ||
+            Uri.parse(_profileImageUrl!).scheme == 'https');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -389,18 +489,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: AppColors.purpleLight,
-                    backgroundImage: (_profileImageUrl != null && 
-                        _profileImageUrl!.isNotEmpty && 
-                        Uri.parse(_profileImageUrl!).hasScheme &&
-                        (Uri.parse(_profileImageUrl!).scheme == 'http' || 
-                         Uri.parse(_profileImageUrl!).scheme == 'https')
-                        ) ? NetworkImage(_profileImageUrl!) : null,
+                    backgroundImage: (_profileImageUrl != null &&
+                            _profileImageUrl!.isNotEmpty &&
+                            Uri.parse(_profileImageUrl!).hasScheme &&
+                            (Uri.parse(_profileImageUrl!).scheme == 'http' ||
+                                Uri.parse(_profileImageUrl!).scheme == 'https'))
+                        ? NetworkImage(_profileImageUrl!)
+                        : null,
                     child: Stack(
                       children: [
-                        if (_profileImageUrl == null || _profileImageUrl!.isEmpty || 
+                        if (_profileImageUrl == null ||
+                            _profileImageUrl!.isEmpty ||
                             !Uri.parse(_profileImageUrl!).hasScheme ||
-                            (Uri.parse(_profileImageUrl!).scheme != 'http' && 
-                             Uri.parse(_profileImageUrl!).scheme != 'https'))
+                            (Uri.parse(_profileImageUrl!).scheme != 'http' &&
+                                Uri.parse(_profileImageUrl!).scheme != 'https'))
                           Center(
                             child: Text(
                               (_userData?['name'] ?? 'User')
@@ -427,11 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Icons.camera_alt,
                                 color: AppColors.purpleLight,
                               ),
-                              onPressed: () {
-                                // Image upload functionality will be implemented later
-                                showInfoSnackBar(
-                                    context, 'Image upload coming soon!');
-                              },
+                              onPressed: _uploadProfileImage,
                             ),
                           ),
                         ),

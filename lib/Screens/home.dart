@@ -8,6 +8,9 @@ import 'package:dbms_proj/Screens/projects_screen.dart';
 import 'package:dbms_proj/Screens/profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Get Supabase client instance
+final supabase = Supabase.instance.client;
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -17,6 +20,16 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
+  bool _isLoading = true;
+
+  // User data
+  Map<String, dynamic>? _userData;
+  Map<String, dynamic>? _profileData;
+  Map<String, dynamic>? _departmentData;
+  String? _profileImageUrl;
+  String _userInitials = '';
+  String _userName = 'User';
+  String _departmentName = '';
 
   // List of section titles for app bar
   final List<String> _sectionTitles = [
@@ -32,6 +45,93 @@ class _HomeState extends State<Home> {
     const ProjectsScreen(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  // Fetch user profile from Supabase
+  Future<void> _fetchUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get current authenticated user
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        showErrorSnackBar(context, 'User not authenticated');
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      // Fetch user data with profile and department info
+      final data = await supabase
+          .from('users')
+          .select('*, profile(*), department(*)')
+          .eq('userid', user.id)
+          .single();
+
+      // Make sure widget is still mounted before setting state
+      if (!mounted) return;
+
+      setState(() {
+        _userData = data;
+        _profileData = data['profile'];
+        _departmentData = data['department'];
+        _profileImageUrl = _profileData?['profilepicture'];
+        _userName = _userData?['name'] ?? 'User';
+        _departmentName = _departmentData?['name'] ?? '';
+
+        // Generate initials from name
+        _userInitials = _getUserInitials(_userName);
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching profile: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // Get user initials from name
+  String _getUserInitials(String name) {
+    String initials = name
+        .split(' ')
+        .map((e) => e.isNotEmpty ? e[0] : '')
+        .join('')
+        .toUpperCase();
+
+    if (initials.length > 2) {
+      initials = initials.substring(0, 2);
+    }
+    return initials;
+  }
+
+  // Check if profile image URL is valid
+  bool _hasValidImageUrl() {
+    return _profileImageUrl != null &&
+        _profileImageUrl!.isNotEmpty &&
+        Uri.parse(_profileImageUrl!).hasScheme &&
+        (Uri.parse(_profileImageUrl!).scheme == 'http' ||
+            Uri.parse(_profileImageUrl!).scheme == 'https');
+  }
+
+  // Get profile image URL with cache-busting parameter
+  String? _getProfileImageWithCacheBusting() {
+    if (!_hasValidImageUrl()) return null;
+
+    // Add timestamp as a query parameter to prevent caching
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final separator = _profileImageUrl!.contains('?') ? '&' : '?';
+    return '$_profileImageUrl${separator}t=$timestamp';
+  }
+
   void _showProfileMenu() {
     showModalBottomSheet(
       context: context,
@@ -45,30 +145,35 @@ class _HomeState extends State<Home> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 40,
                 backgroundColor: AppColors.purpleLight,
-                child: Text(
-                  'AJ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                  ),
-                ),
+                backgroundImage: _hasValidImageUrl()
+                    ? NetworkImage(_getProfileImageWithCacheBusting()!)
+                    : null,
+                child: !_hasValidImageUrl()
+                    ? Text(
+                        _userInitials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Alex Johnson',
-                style: TextStyle(
+              Text(
+                _userName,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Computer Science',
-                style: TextStyle(
+              Text(
+                _departmentName,
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
@@ -77,14 +182,27 @@ class _HomeState extends State<Home> {
               ListTile(
                 leading: const Icon(Icons.person, color: AppColors.purpleLight),
                 title: const Text('View Profile'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
                   // Navigate to profile page
-                  Navigator.push(
+                  final profileUpdated = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
                         builder: (context) => const ProfileScreen()),
                   );
+
+                  // Force refresh profile data when returning from profile screen if updates were made
+                  if (mounted && (profileUpdated == true)) {
+                    // Clear cached data explicitly
+                    setState(() {
+                      _profileImageUrl = null;
+                      _userData = null;
+                      _profileData = null;
+                    });
+
+                    // Fetch fresh data from the server
+                    await _fetchUserProfile();
+                  }
                 },
               ),
               ListTile(
@@ -106,8 +224,6 @@ class _HomeState extends State<Home> {
                   showSuccessSnackBar(context, 'Logged out successfully');
                   // Navigate to login page using named route after a short delay
                   Navigator.pushReplacementNamed(context, '/login');
-                  // Uncomment the line below if you want to navigate to login page directly
-                  // Navigator.pushReplacementNamed(context, '/login');
                 },
               ),
             ],
@@ -141,14 +257,19 @@ class _HomeState extends State<Home> {
                 child: CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.purpleLight,
-                  child: const Text(
-                    'AJ',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
+                  backgroundImage: _hasValidImageUrl()
+                      ? NetworkImage(_getProfileImageWithCacheBusting()!)
+                      : null,
+                  child: !_hasValidImageUrl()
+                      ? Text(
+                          _userInitials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        )
+                      : null,
                 ),
               ),
             ),
