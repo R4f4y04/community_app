@@ -110,18 +110,57 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         .from('globalchat')
         .stream(primaryKey: ['messageid'])
         .order('timestamp')
-        .listen((List<Map<String, dynamic>> data) {
+        .listen((List<Map<String, dynamic>> data) async {
           if (mounted) {
-            setState(() {
-              _messages = _formatMessages(data);
-              _isLoading = false;
-              _hasError = false;
-            });
+            // When new messages come in, we need to fetch the full message data with user info
+            // because real-time updates don't include joined tables
+            if (data.isNotEmpty) {
+              try {
+                // Get the latest message
+                final latestMessage = data.last;
 
-            // Scroll to bottom on new messages if already near bottom
-            if (_isNearBottom()) {
-              Future.delayed(
-                  const Duration(milliseconds: 100), _scrollToBottom);
+                // Fetch the complete message with user data
+                final completeMessages = await supabase
+                    .from('globalchat')
+                    .select('*, users(*)')
+                    .eq('messageid', latestMessage['messageid'])
+                    .single();
+
+                // Create a properly formatted message
+                final formattedNewMessage = _formatMessages([completeMessages]);
+
+                // Update messages list by adding the new message
+                setState(() {
+                  bool messageExists = false;
+
+                  // Check if the message already exists in the list
+                  for (int i = 0; i < _messages.length; i++) {
+                    if (_messages[i]['messageid'] ==
+                        formattedNewMessage[0]['messageid']) {
+                      messageExists = true;
+                      break;
+                    }
+                  }
+
+                  // Only add if it's a new message
+                  if (!messageExists) {
+                    _messages.add(formattedNewMessage[0]);
+                    _messages
+                        .sort((a, b) => a['dateTime'].compareTo(b['dateTime']));
+                  }
+
+                  _isLoading = false;
+                  _hasError = false;
+                });
+
+                // Scroll to bottom on new messages if already near bottom
+                if (_isNearBottom()) {
+                  Future.delayed(
+                      const Duration(milliseconds: 100), _scrollToBottom);
+                }
+              } catch (e) {
+                print('Error processing real-time message: $e');
+              }
             }
           }
         }, onError: (error) {
@@ -264,12 +303,41 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
         scaffoldMessenger.showSnackBar(sendingSnackBar);
 
+        // Create timestamp for consistency
+        final now = DateTime.now();
+        final timestamp = now.toIso8601String();
+
         // Send to global chat
-        await supabase.from('globalchat').insert({
+        final response = await supabase.from('globalchat').insert({
           'senderid': _userId,
           'message': messageText,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
+          'timestamp': timestamp,
+        }).select('messageid');
+
+        // Optimistically add the message to the UI immediately
+        if (mounted && response.isNotEmpty) {
+          final messageId = response[0]['messageid'];
+          final formattedTime = DateFormat('h:mm a').format(now);
+
+          setState(() {
+            _messages.add({
+              'messageid': messageId,
+              'sender': _userName,
+              'initials': _getInitials(_userName),
+              'message': messageText,
+              'timestamp': formattedTime,
+              'dateTime': now,
+              'avatar': _avatarUrl.isNotEmpty ? _avatarUrl : null,
+              'isMe': true,
+            });
+
+            // Sort messages by time
+            _messages.sort((a, b) => a['dateTime'].compareTo(b['dateTime']));
+          });
+
+          // Scroll to bottom
+          Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+        }
       }
     } catch (e) {
       print('Error sending message: $e');
