@@ -41,3 +41,5 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+database/feed_tables.sql
+docs/feed_implementation.md

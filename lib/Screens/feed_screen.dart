@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
-import 'package:dbms_proj/util/functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
+
+// Get Supabase client instance
+final supabase = Supabase.instance.client;
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -21,54 +24,427 @@ class _FeedScreenState extends State<FeedScreen> {
     "Arts"
   ];
 
-  // Dummy post data for demonstration
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'author': 'Alex Johnson',
-      'department': 'Computer Science',
-      'title': 'Workshop on Flutter Development',
-      'content':
-          'Join us for an interactive workshop on building cross-platform apps with Flutter. We\'ll cover the basics and move on to advanced topics.',
-      'likes': 42,
-      'comments': 8,
-      'timestamp': '2h ago',
-      'avatar': 'https://i.pravatar.cc/150?img=1',
-    },
-    {
-      'author': 'Samantha Lee',
-      'department': 'Business',
-      'title': 'Entrepreneurship Seminar',
-      'content':
-          'Learn how to turn your ideas into a successful business venture. Guest speakers from local startups will share their experiences.',
-      'likes': 29,
-      'comments': 12,
-      'timestamp': '4h ago',
-      'avatar': 'https://i.pravatar.cc/150?img=5',
-    },
-    {
-      'author': 'Michael Chen',
-      'department': 'Electrical',
-      'title': 'IoT Project Showcase',
-      'content':
-          'Come see our department\'s latest Internet of Things projects. From smart home solutions to industrial automation.',
-      'likes': 18,
-      'comments': 3,
-      'timestamp': '1d ago',
-      'avatar': 'https://i.pravatar.cc/150?img=3',
-    },
-    {
-      'author': 'Emily Rodriguez',
-      'department': 'Arts',
-      'title': 'Digital Art Exhibition',
-      'content':
-          'The Arts department is hosting a digital art exhibition featuring works from students and faculty. Opening reception is Friday at 6 PM.',
-      'likes': 37,
-      'comments': 15,
-      'timestamp': '2d ago',
-      'avatar': 'https://i.pravatar.cc/150?img=10',
-    },
-  ];
+  // State variables
+  bool _isLoading = true;
+  bool _hasError = false;
+  StreamSubscription? _postsSubscription;
+  // User information
+  String? _userId;
+  String _userDepartment = "";
+  String _avatarUrl = "https://i.pravatar.cc/150?img=1";
 
+  @override
+  void initState() {
+    super.initState();
+    _initUser();
+    _loadPosts();
+    _subscribeToPosts();
+  }
+
+  @override
+  void dispose() {
+    _postsSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Initialize user data from Supabase auth session
+  Future<void> _initUser() async {
+    try {
+      final session = supabase.auth.currentSession;
+      if (session != null) {
+        final userId = session.user.id;
+        setState(() {
+          _userId = userId;
+        });
+
+        // Get user details from profile table
+        final userData = await supabase
+            .from('profile')
+            .select(
+                'Bio, ProfilePicture') // Changed from 'username, avatar_url, department' to match schema
+            .eq('UserID',
+                userId) // Changed from 'userid' to 'UserID' to match schema
+            .single();
+
+        // Get user's department from users table
+        final userInfo = await supabase
+            .from('users')
+            .select('DepartmentID')
+            .eq('UserID', userId)
+            .single();
+
+        final deptId = userInfo['DepartmentID']
+            as int?; // Changed from String to int since it's a BIGINT in the schema
+
+        if (deptId != null) {
+          // Get department name
+          final deptData = await supabase
+              .from('department')
+              .select(
+                  'Name') // Changed from 'department_name' to 'Name' to match the schema
+              .eq('departmentid', deptId)
+              .single();
+          setState(() {
+            _avatarUrl = userData['ProfilePicture'] ??
+                _avatarUrl; // Changed from 'avatar_url' to 'ProfilePicture'
+            _userDepartment = deptData['Name'] ??
+                ""; // Changed from 'department_name' to 'Name' to match the schema
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
+
+  // Load posts from Supabase
+  Future<void> _loadPosts() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
+
+      // Query based on the correct database schema field names
+      final response = await supabase.from('posts').select('''
+            *,
+            users:userid (Name),
+            profile:userid (ProfilePicture),
+            department:departmentid (Name)
+          ''').order('created_at', ascending: false);
+
+      final List<Map<String, dynamic>> formattedPosts = [];
+
+      for (final post in response) {
+        // Format post data
+        final userData = post['users'] as Map<String, dynamic>;
+        final profileData = post['profile'] as Map<String, dynamic>;
+        final deptData = post['department'] as Map<String, dynamic>;
+
+        final DateTime createdAt = DateTime.parse(post['created_at']);
+        final String timeAgo = _getTimeAgo(createdAt);
+
+        formattedPosts.add({
+          'id': post['postid'],
+          'author': userData['Name'] ??
+              'Unknown User', // Using the correct field name 'Name'
+          'department': deptData['Name'] ??
+              'General', // Using the correct field name 'Name'
+          'title': post['title'] ?? 'Untitled Post',
+          'content': post['content'] ?? '',
+          'likes': post['likes_count'] ?? 0,
+          'comments': post['comments_count'] ?? 0,
+          'timestamp': timeAgo,
+          'avatar': profileData['ProfilePicture'] ??
+              'https://i.pravatar.cc/150?img=1', // Using the correct field name 'ProfilePicture'
+          'raw_data': post,
+        });
+      }
+
+      setState(() {
+        _posts = formattedPosts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+      debugPrint('Error loading posts: $e');
+    }
+  } // Subscribe to real-time updates for posts
+
+  void _subscribeToPosts() {
+    // With Supabase Flutter v2.x:
+    final channel = supabase.channel('schema-db-changes');
+
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'posts',
+          callback: (payload) {
+            _loadPosts(); // Reload all posts when a new one is added
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'posts',
+          callback: (payload) {
+            _loadPosts(); // Reload all posts when one is updated
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'comments',
+          callback: (payload) {
+            // When a comment is added, reload posts to update comment counts
+            _loadPosts();
+          },
+        );
+
+    // Subscribe to the channel
+    channel.subscribe();
+
+    // Create a stream that completes when onDispose is called
+    final controller = StreamController<void>();
+    controller.onCancel = () {
+      channel.unsubscribe();
+    };
+
+    // Store a subscription to this stream for cleanup
+    _postsSubscription = controller.stream.listen((_) {});
+  }
+
+  // Helper function to calculate time ago
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 365) {
+      return '${(difference.inDays / 365).floor()}y ago';
+    } else if (difference.inDays > 30) {
+      return '${(difference.inDays / 30).floor()}mo ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'just now';
+    }
+  }
+
+  // Create a new post
+  Future<void> _createNewPost(
+      String title, String content, int departmentId) async {
+    try {
+      if (_userId == null) {
+        // User not logged in
+        return;
+      }
+
+      // Insert post into database
+      await supabase.from('posts').insert({
+        'userid': _userId,
+        'title': title,
+        'content': content,
+        'departmentid': departmentId,
+        'created_at': DateTime.now().toIso8601String(),
+        'likes_count': 0,
+        'comments_count': 0,
+      });
+
+      // Reload posts (should happen automatically via subscription)
+    } catch (e) {
+      debugPrint('Error creating post: $e');
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating post: $e')),
+        );
+      }
+    }
+  }
+
+  // Like a post
+  Future<void> _likePost(String postId) async {
+    try {
+      // Get current post data
+      final post = await supabase
+          .from('posts')
+          .select('likes_count')
+          .eq('postid', postId)
+          .single();
+
+      final currentLikes = post['likes_count'] as int? ?? 0;
+
+      // Update post with incremented likes
+      await supabase.from('posts').update({
+        'likes_count': currentLikes + 1,
+      }).eq('postid', postId);
+    } catch (e) {
+      debugPrint('Error liking post: $e');
+    }
+  }
+
+  // Add comment to post
+  Future<void> _addComment(String postId, String comment) async {
+    try {
+      if (_userId == null) {
+        // User not logged in
+        return;
+      }
+
+      // Insert comment
+      await supabase.from('comments').insert({
+        'postid': postId,
+        'userid': _userId,
+        'content': comment,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      // Update comment count on post
+      final post = await supabase
+          .from('posts')
+          .select('comments_count')
+          .eq('postid', postId)
+          .single();
+
+      final currentComments = post['comments_count'] as int? ?? 0;
+
+      await supabase.from('posts').update({
+        'comments_count': currentComments + 1,
+      }).eq('postid', postId);
+    } catch (e) {
+      debugPrint('Error adding comment: $e');
+    }
+  }
+
+  // Show comment dialog
+  void _showCommentDialog(String postId) {
+    final TextEditingController commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Comment'),
+        content: TextField(
+          controller: commentController,
+          decoration: const InputDecoration(
+            hintText: 'Write your comment...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final comment = commentController.text.trim();
+              if (comment.isNotEmpty) {
+                _addComment(postId, comment);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Post Comment'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show create post dialog
+  void _showCreatePostDialog() {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController contentController = TextEditingController();
+    String selectedDept = _departments.contains(_userDepartment)
+        ? _userDepartment
+        : _departments.firstWhere((dept) => dept != "All",
+            orElse: () => "Computer Science");
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Post'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: contentController,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 5,
+              ),
+              const SizedBox(height: 16),
+              const Text('Department:'),
+              DropdownButton<String>(
+                value: selectedDept,
+                isExpanded: true,
+                items: _departments
+                    .where((dept) => dept != "All")
+                    .map((dept) => DropdownMenuItem<String>(
+                          value: dept,
+                          child: Text(dept),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      selectedDept = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final title = titleController.text.trim();
+              final content = contentController.text.trim();
+
+              if (title.isNotEmpty && content.isNotEmpty) {
+                Navigator.pop(context);
+
+                // Get department ID from department name
+                try {
+                  final deptResponse = await supabase
+                      .from('department')
+                      .select('departmentid')
+                      .eq('Name',
+                          selectedDept) // Changed from 'department_name' to 'Name' to match the schema
+                      .single();
+
+                  final departmentId = deptResponse['departmentid']
+                      as int; // Changed from String to int since it's a BIGINT in the schema
+                  await _createNewPost(title, content, departmentId);
+                } catch (e) {
+                  debugPrint('Error getting department ID: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content:
+                              Text('Error creating post. Please try again.')),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // List of posts from Supabase
+  List<Map<String, dynamic>> _posts = [];
+
+  // Get filtered posts based on selected department
   List<Map<String, dynamic>> get filteredPosts {
     if (_selectedDepartment == "All") {
       return _posts;
@@ -103,10 +479,10 @@ class _FeedScreenState extends State<FeedScreen> {
                       _selectedDepartment = _departments[index];
                     });
                   },
-                  selectedColor: AppColors.purpleLight,
-                  backgroundColor: AppColors.surfaceVariant,
+                  selectedColor: Colors.purpleAccent,
+                  backgroundColor: Colors.grey[200],
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? Colors.white : Colors.black54,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -119,154 +495,206 @@ class _FeedScreenState extends State<FeedScreen> {
 
         // Posts Feed
         Expanded(
-          child: filteredPosts.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.article_outlined,
-                        size: 80,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No posts in $_selectedDepartment yet',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Create a new post logic
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create first post'),
-                      ),
-                    ],
-                  ),
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
                 )
-              : ListView.builder(
-                  itemCount: filteredPosts.length,
-                  padding: const EdgeInsets.all(8),
-                  itemBuilder: (context, index) {
-                    final post = filteredPosts[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+              : _hasError
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Error loading posts',
+                            style: TextStyle(
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _loadPosts,
+                            child: const Text('Try Again'),
+                          ),
+                        ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Author Row
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage: NetworkImage(post['avatar']),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post['author'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      post['timestamp'],
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Chip(
-                                  label: Text(
-                                    post['department'],
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                  backgroundColor: AppColors.surfaceVariant,
-                                  padding: EdgeInsets.zero,
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Post Content
-                            Text(
-                              post['title'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                    )
+                  : filteredPosts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.article_outlined,
+                                size: 80,
+                                color: Colors.black38,
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              post['content'],
-                              style: const TextStyle(
-                                fontSize: 14,
+                              const SizedBox(height: 16),
+                              Text(
+                                'No posts in $_selectedDepartment yet',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Interaction Buttons
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.thumb_up_outlined),
-                                  onPressed: () {},
-                                  visualDensity: VisualDensity.compact,
-                                  color: AppColors.purpleLight,
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                onPressed: _showCreatePostDialog,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Create first post'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadPosts,
+                          child: ListView.builder(
+                            itemCount: filteredPosts.length,
+                            padding: const EdgeInsets.all(8),
+                            itemBuilder: (context, index) {
+                              final post = filteredPosts[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                Text(
-                                  '${post['likes']}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Author Row
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 20,
+                                            backgroundImage:
+                                                NetworkImage(post['avatar']),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                post['author'],
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              Text(
+                                                post['timestamp'],
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                          Chip(
+                                            label: Text(
+                                              post['department'],
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+                                            backgroundColor: Colors.grey[200],
+                                            padding: EdgeInsets.zero,
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 16),
+
+                                      // Post Content
+                                      Text(
+                                        post['title'],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        post['content'],
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 16),
+
+                                      // Interaction Buttons
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                                Icons.thumb_up_outlined),
+                                            onPressed: () =>
+                                                _likePost(post['id']),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                          Text(
+                                            '${post['likes']}',
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          IconButton(
+                                            icon: const Icon(
+                                                Icons.comment_outlined),
+                                            onPressed: () =>
+                                                _showCommentDialog(post['id']),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                          Text(
+                                            '${post['comments']}',
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          IconButton(
+                                            icon: const Icon(
+                                                Icons.share_outlined),
+                                            onPressed: () {},
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(width: 16),
-                                IconButton(
-                                  icon: const Icon(Icons.comment_outlined),
-                                  onPressed: () {},
-                                  visualDensity: VisualDensity.compact,
-                                  color: AppColors.purpleLight,
-                                ),
-                                Text(
-                                  '${post['comments']}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const Spacer(),
-                                IconButton(
-                                  icon: const Icon(Icons.share_outlined),
-                                  onPressed: () {},
-                                  visualDensity: VisualDensity.compact,
-                                  color: AppColors.purpleLight,
-                                ),
-                              ],
-                            ),
-                          ],
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+        ),
+
+        // Add Post Button
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: FloatingActionButton(
+            onPressed: _showCreatePostDialog,
+            child: const Icon(Icons.add),
+          ),
         ),
       ],
     );
