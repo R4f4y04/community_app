@@ -203,14 +203,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           : (user?['profile']?['profilepicture'] ?? '');
 
       final String initials = _getInitials(senderName);
-
       return {
         'messageid': msg['messageid'],
         'sender': senderName,
         'initials': initials,
         'message': msg['message'] ?? '',
         'timestamp': formattedTime,
-        'timestamp': timestamp,
+        'dateTime': timestamp,
         'avatar': avatarUrl.isNotEmpty ? avatarUrl : null,
         'isMe': isCurrentUser,
       };
@@ -550,13 +549,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             itemBuilder: (context, index) {
               // Show date header if it's the first message or date changes from previous
               final bool showDateHeader = index == 0 ||
-                  !_isSameDay(_messages[index]['timestamp'],
-                      _messages[index - 1]['timestamp']);
+                  !_isSameDay(_messages[index]['dateTime'],
+                      _messages[index - 1]['dateTime']);
 
               return Column(
                 children: [
                   if (showDateHeader)
-                    _buildDateHeader(_messages[index]['timestamp']),
+                    _buildDateHeader(_messages[index]['dateTime']),
                   _buildMessageBubble(_messages[index]),
                 ],
               );
