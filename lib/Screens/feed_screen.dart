@@ -38,12 +38,16 @@ class _FeedScreenState extends State<FeedScreen> {
   String _userDepartment = "";
   String _avatarUrl = "https://i.pravatar.cc/150?img=1";
 
+  // Add a Set to track liked posts for the current user
+  Set<String> _likedPostIds = {};
+
   @override
   void initState() {
     super.initState();
     _initUser();
     _loadPosts();
     _subscribeToPosts();
+    _fetchLikedPosts();
   }
 
   @override
@@ -92,6 +96,21 @@ class _FeedScreenState extends State<FeedScreen> {
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
+    }
+  }
+
+  // Fetch liked posts for the current user
+  Future<void> _fetchLikedPosts() async {
+    if (_userId == null) return;
+    try {
+      final response =
+          await supabase.from('likes').select('postid').eq('userid', _userId!);
+      setState(() {
+        _likedPostIds =
+            Set<String>.from(response.map((e) => e['postid'].toString()));
+      });
+    } catch (e) {
+      debugPrint('Error fetching liked posts: $e');
     }
   }
 
@@ -192,8 +211,8 @@ class _FeedScreenState extends State<FeedScreen> {
 
   // Helper function to calculate time ago
   String _getTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final now = DateTime.now().toUtc();
+    final difference = now.difference(dateTime.toUtc());
 
     if (difference.inDays > 365) {
       return '${(difference.inDays / 365).floor()}y ago';
@@ -242,24 +261,33 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  // Like a post
-  Future<void> _likePost(String postId) async {
+  // Like/unlike a post
+  Future<void> _toggleLikePost(String postId) async {
+    if (_userId == null) return;
     try {
-      // Get current post data
-      final post = await supabase
-          .from('posts')
-          .select('likes_count')
-          .eq('postid', postId)
-          .single();
-
-      final currentLikes = post['likes_count'] as int? ?? 0;
-
-      // Update post with incremented likes
-      await supabase.from('posts').update({
-        'likes_count': currentLikes + 1,
-      }).eq('postid', postId);
+      final alreadyLiked = _likedPostIds.contains(postId);
+      if (alreadyLiked) {
+        // Remove like
+        await supabase
+            .from('likes')
+            .delete()
+            .match({'postid': postId, 'userid': _userId!});
+        setState(() {
+          _likedPostIds.remove(postId);
+        });
+      } else {
+        // Add like
+        await supabase
+            .from('likes')
+            .insert({'postid': postId, 'userid': _userId!});
+        setState(() {
+          _likedPostIds.add(postId);
+        });
+      }
+      // Always reload posts to get updated like count
+      await _loadPosts();
     } catch (e) {
-      debugPrint('Error liking post: $e');
+      debugPrint('Error toggling like: $e');
     }
   }
 
@@ -467,102 +495,104 @@ class _FeedScreenState extends State<FeedScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Post'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text('Create New Post'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: contentController,
-                decoration: const InputDecoration(
-                  labelText: 'Content',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: contentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Content',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 5,
                 ),
-                maxLines: 5,
-              ),
-              const SizedBox(height: 16),
-              const Text('Department:'),
-              DropdownButton<String>(
-                value: selectedDept,
-                isExpanded: true,
-                items: _departments
-                    .where((dept) => dept != "All")
-                    .map((dept) => DropdownMenuItem<String>(
-                          value: dept,
-                          child: Text(dept),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      selectedDept = value;
-                    });
-                  }
-                },
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text('Department:'),
+                DropdownButton<String>(
+                  value: selectedDept,
+                  isExpanded: true,
+                  items: _departments
+                      .where((dept) => dept != "All")
+                      .map((dept) => DropdownMenuItem<String>(
+                            value: dept,
+                            child: Text(dept),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setStateDialog(() {
+                        selectedDept = value;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final title = titleController.text.trim();
-              final content = contentController.text.trim();
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final title = titleController.text.trim();
+                final content = contentController.text.trim();
 
-              if (title.isNotEmpty && content.isNotEmpty) {
-                Navigator.pop(context);
+                if (title.isNotEmpty && content.isNotEmpty) {
+                  Navigator.pop(context);
 
-                // Get department ID from department name
-                try {
-                  final deptResponse = await supabase
-                      .from('department')
-                      .select('departmentid')
-                      .eq('name', selectedDept)
-                      .maybeSingle();
+                  // Get department ID from department name
+                  try {
+                    final deptResponse = await supabase
+                        .from('department')
+                        .select('departmentid')
+                        .eq('name', selectedDept)
+                        .maybeSingle();
 
-                  if (deptResponse == null) {
+                    if (deptResponse == null) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  'Department "$selectedDept" not found.')),
+                        );
+                      }
+                      return;
+                    }
+
+                    final departmentId = deptResponse['departmentid'] as int;
+                    await _createNewPost(title, content, departmentId);
+                    debugPrint('Post created for departmentId: $departmentId');
+                  } catch (e) {
+                    debugPrint('Error getting department ID: $e');
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                             content:
-                                Text('Department "$selectedDept" not found.')),
+                                Text('Error creating post. Please try again.')),
                       );
                     }
-                    return;
-                  }
-
-                  final departmentId = deptResponse['departmentid'] as int;
-                  await _createNewPost(title, content, departmentId);
-                  debugPrint('Post created for departmentId: $departmentId');
-                } catch (e) {
-                  debugPrint('Error getting department ID: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Error creating post. Please try again.')),
-                    );
                   }
                 }
-              }
-            },
-            child: const Text('Post'),
-          ),
-        ],
+              },
+              child: const Text('Post'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -786,13 +816,20 @@ class _FeedScreenState extends State<FeedScreen> {
                                       Row(
                                         children: [
                                           IconButton(
-                                            icon: const Icon(
-                                                Icons.thumb_up_alt_rounded),
+                                            icon: Icon(
+                                              _likedPostIds.contains(post['id'])
+                                                  ? Icons.thumb_up_alt
+                                                  : Icons.thumb_up_alt_outlined,
+                                              color: _likedPostIds
+                                                      .contains(post['id'])
+                                                  ? Colors.purpleAccent
+                                                  : Colors.purpleAccent
+                                                      .withOpacity(0.5),
+                                            ),
                                             onPressed: () =>
-                                                _likePost(post['id']),
+                                                _toggleLikePost(post['id']),
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            color: Colors.purpleAccent,
                                           ),
                                           Text(
                                             '${post['likes']}',
