@@ -16,12 +16,17 @@ class _FeedScreenState extends State<FeedScreen> {
   String _selectedDepartment = "All";
   final List<String> _departments = [
     "All",
-    "Computer Science",
-    "Electrical",
-    "Mechanical",
-    "Civil",
-    "Business",
-    "Arts"
+    "Web Dev",
+    "App Dev",
+    "Backend",
+    "Design",
+    "Marketing",
+    "Finance",
+    "Fullstack",
+    "AI",
+    "Quality Assurance",
+    "Executive Council",
+    "Unassigned"
   ];
 
   // State variables
@@ -334,7 +339,7 @@ class _FeedScreenState extends State<FeedScreen> {
     String selectedDept = _departments.contains(_userDepartment)
         ? _userDepartment
         : _departments.firstWhere((dept) => dept != "All",
-            orElse: () => "Computer Science");
+            orElse: () => "Web Dev");
 
     showDialog(
       context: context,
@@ -401,13 +406,24 @@ class _FeedScreenState extends State<FeedScreen> {
                 try {
                   final deptResponse = await supabase
                       .from('department')
-                      .select(
-                          'departmentid') // Changed to lowercase 'departmentid'
-                      .eq('name', selectedDept) // Changed to lowercase 'name'
-                      .single();
+                      .select('departmentid')
+                      .eq('name', selectedDept)
+                      .maybeSingle();
+
+                  if (deptResponse == null) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('Department "$selectedDept" not found.')),
+                      );
+                    }
+                    return;
+                  }
 
                   final departmentId = deptResponse['departmentid'] as int;
                   await _createNewPost(title, content, departmentId);
+                  debugPrint('Post created for departmentId: $departmentId');
                 } catch (e) {
                   debugPrint('Error getting department ID: $e');
                   if (mounted) {
