@@ -56,8 +56,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     try {
       final response = await supabase
           .from('project')
-          .select(
-              '*, department:departmentid(name), owner:ownerid(name, profile:profilepicture)')
+          .select('*, department:departmentid(name), owner:ownerid(name)')
           .order('projectid', ascending: false);
       setState(() {
         _projects = List<Map<String, dynamic>>.from(response);
