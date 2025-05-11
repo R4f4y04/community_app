@@ -55,40 +55,33 @@ class _FeedScreenState extends State<FeedScreen> {
         final userId = session.user.id;
         setState(() {
           _userId = userId;
-        });
-
-        // Get user details from profile table
+        }); // Get user details from profile table
         final userData = await supabase
             .from('profile')
-            .select(
-                'Bio, ProfilePicture') // Changed from 'username, avatar_url, department' to match schema
-            .eq('UserID',
-                userId) // Changed from 'userid' to 'UserID' to match schema
+            .select('bio, profilepicture')
+            .eq('userid', userId)
             .single();
 
         // Get user's department from users table
         final userInfo = await supabase
             .from('users')
-            .select('DepartmentID')
-            .eq('UserID', userId)
+            .select('departmentid')
+            .eq('userid', userId)
             .single();
-
-        final deptId = userInfo['DepartmentID']
-            as int?; // Changed from String to int since it's a BIGINT in the schema
+        final deptId = userInfo['departmentid']
+            as int?; // Changed from 'DepartmentID' to 'departmentid'
 
         if (deptId != null) {
           // Get department name
           final deptData = await supabase
               .from('department')
-              .select(
-                  'Name') // Changed from 'department_name' to 'Name' to match the schema
+              .select('name')
               .eq('departmentid', deptId)
               .single();
           setState(() {
-            _avatarUrl = userData['ProfilePicture'] ??
-                _avatarUrl; // Changed from 'avatar_url' to 'ProfilePicture'
-            _userDepartment = deptData['Name'] ??
-                ""; // Changed from 'department_name' to 'Name' to match the schema
+            _avatarUrl = userData['profilepicture'] ??
+                _avatarUrl; // Changed from 'ProfilePicture' to 'profilepicture'
+            _userDepartment = deptData['name'] ?? "";
           });
         }
       }
@@ -105,38 +98,32 @@ class _FeedScreenState extends State<FeedScreen> {
         _hasError = false;
       });
 
-      // Query based on the correct database schema field names
-      final response = await supabase.from('posts').select('''
-            *,
-            users:userid (Name),
-            profile:userid (ProfilePicture),
-            department:departmentid (Name)
-          ''').order('created_at', ascending: false);
+      // Query the post_details view which already joins all necessary tables
+      final response = await supabase
+          .from('post_details')
+          .select()
+          .order('created_at', ascending: false);
 
       final List<Map<String, dynamic>> formattedPosts = [];
 
       for (final post in response) {
-        // Format post data
-        final userData = post['users'] as Map<String, dynamic>;
-        final profileData = post['profile'] as Map<String, dynamic>;
-        final deptData = post['department'] as Map<String, dynamic>;
-
+        // The view already flattened the data structure, so we can access fields directly
         final DateTime createdAt = DateTime.parse(post['created_at']);
         final String timeAgo = _getTimeAgo(createdAt);
 
         formattedPosts.add({
           'id': post['postid'],
-          'author': userData['Name'] ??
-              'Unknown User', // Using the correct field name 'Name'
-          'department': deptData['Name'] ??
-              'General', // Using the correct field name 'Name'
+          'author':
+              post['name'] ?? 'Unknown User', // This is user name from the view
+          'department': post['department_name'] ??
+              'General', // Department name from the view
           'title': post['title'] ?? 'Untitled Post',
           'content': post['content'] ?? '',
           'likes': post['likes_count'] ?? 0,
           'comments': post['comments_count'] ?? 0,
           'timestamp': timeAgo,
-          'avatar': profileData['ProfilePicture'] ??
-              'https://i.pravatar.cc/150?img=1', // Using the correct field name 'ProfilePicture'
+          'avatar': post['profilepicture'] ??
+              'https://i.pravatar.cc/150?img=1', // Lowercase as per schema
           'raw_data': post,
         });
       }
@@ -414,13 +401,12 @@ class _FeedScreenState extends State<FeedScreen> {
                 try {
                   final deptResponse = await supabase
                       .from('department')
-                      .select('departmentid')
-                      .eq('Name',
-                          selectedDept) // Changed from 'department_name' to 'Name' to match the schema
+                      .select(
+                          'departmentid') // Changed to lowercase 'departmentid'
+                      .eq('name', selectedDept) // Changed to lowercase 'name'
                       .single();
 
-                  final departmentId = deptResponse['departmentid']
-                      as int; // Changed from String to int since it's a BIGINT in the schema
+                  final departmentId = deptResponse['departmentid'] as int;
                   await _createNewPost(title, content, departmentId);
                 } catch (e) {
                   debugPrint('Error getting department ID: $e');
