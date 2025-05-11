@@ -28,14 +28,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _hasError = false;
   bool _isDepartmentChat = false;
   String _chatMode = "Global Chat";
+
   // User data
   String? _userId;
   String _userName = "User";
   String _avatarUrl = "https://i.pravatar.cc/150?img=2";
-  String?
-      _userDepartmentId; // Will be used for department-specific chat in the future
+  String? _userDepartmentId;
   String _userDepartmentName = "";
-  bool _isAdmin = false; // Track if current user is an administrator
 
   @override
   void initState() {
@@ -77,11 +76,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       final user = supabase.auth.currentUser;
       if (user == null) return;
 
-      _userId = user
-          .id; // Get user profile data with department info and admin status
+      _userId = user.id;
+
+      // Get user profile data with department info
       final userData = await supabase
           .from('users')
-          .select('name, departmentid, isadmin, department(*), profile(*)')
+          .select('name, departmentid, department(*), profile(*)')
           .eq('userid', user.id)
           .single();
 
@@ -90,7 +90,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _userDepartmentId = userData['departmentid'];
         _userDepartmentName = userData['department']?['name'] ?? '';
         _avatarUrl = userData['profile']['profilepicture'] ?? '';
-        _isAdmin = userData['isadmin'] == true; // Set admin status
 
         if (_avatarUrl.isEmpty) {
           _avatarUrl = 'https://i.pravatar.cc/150?img=2';
@@ -242,29 +241,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         // Department chat is coming soon
         showInfoSnackBar(context, 'Department chat is coming soon');
       } else {
-        // Show sending indicator
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
-        final sendingSnackBar = SnackBar(
-          content: const Row(
-            children: [
-              SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 12),
-              Text('Sending message...'),
-            ],
-          ),
-          backgroundColor: AppColors.purpleLight,
-          duration: const Duration(seconds: 1),
-        );
-
-        scaffoldMessenger.showSnackBar(sendingSnackBar);
-
         // Send to global chat
         await supabase.from('globalchat').insert({
           'user_id': _userId,
@@ -496,24 +472,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 24),
-          // Show department ID info - uses the _userDepartmentId field
-          if (_userDepartmentId != null)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Your Department ID: $_userDepartmentId',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -613,89 +571,65 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: _isAdmin ? () => _showMessageOptions(message) : null,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isMe) ...[
-                _buildAvatar(message),
-                const SizedBox(width: 12),
-              ],
-              Flexible(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color:
-                        isMe ? AppColors.purpleLight : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: isMe
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!isMe)
-                            Flexible(
-                              child: Text(
-                                message['sender'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          if (_isAdmin)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4.0),
-                              child: Icon(
-                                Icons.more_horiz,
-                                size: 14,
-                                color: isMe
-                                    ? Colors.white70
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isMe) ...[
+              _buildAvatar(message),
+              const SizedBox(width: 12),
+            ],
+            Flexible(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      isMe ? AppColors.purpleLight : AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment:
+                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    if (!isMe)
                       Text(
-                        message['message'],
-                        style: TextStyle(
-                          color: isMe ? Colors.white : AppColors.textPrimary,
-                          fontSize: 16,
+                        message['sender'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message['timestamp'],
-                        style: TextStyle(
-                          color:
-                              isMe ? Colors.white70 : AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message['message'],
+                      style: TextStyle(
+                        color: isMe ? Colors.white : AppColors.textPrimary,
+                        fontSize: 16,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message['timestamp'],
+                      style: TextStyle(
+                        color: isMe ? Colors.white70 : AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -717,128 +651,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               ),
             )
           : null,
-    );
-  }
-
-  // Show admin options for messages
-  void _showMessageOptions(Map<String, dynamic> message) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                'Message Options',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Delete Message'),
-              onTap: () {
-                Navigator.pop(context);
-                _deleteMessage(message);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy, color: AppColors.purpleLight),
-              title: const Text('Copy Message Text'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: message['message']));
-                Navigator.pop(context);
-                showSuccessSnackBar(context, 'Message copied to clipboard');
-              },
-            ),
-            ListTile(
-              leading:
-                  const Icon(Icons.info_outline, color: AppColors.purpleLight),
-              title: const Text('Message Info'),
-              onTap: () {
-                Navigator.pop(context);
-                _showMessageInfo(message);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Delete a message
-  Future<void> _deleteMessage(Map<String, dynamic> message) async {
-    try {
-      await supabase
-          .from('globalchat')
-          .delete()
-          .eq('messageid', message['messageid']);
-
-      showSuccessSnackBar(context, 'Message deleted');
-      // Message will be removed automatically through the subscription
-    } catch (e) {
-      print('Error deleting message: $e');
-      showErrorSnackBar(context, 'Failed to delete message');
-    }
-  }
-
-  // Show message details
-  void _showMessageInfo(Map<String, dynamic> message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Message Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMessageInfoRow('Sender', message['sender']),
-            _buildMessageInfoRow('Time', message['timestamp']),
-            _buildMessageInfoRow('Message ID', message['messageid'].toString()),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Close'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper for message info dialog
-  Widget _buildMessageInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:dbms_proj/Screens/chat_screen.dart';
 import 'package:dbms_proj/Screens/projects_screen.dart';
 import 'package:dbms_proj/Screens/profile_screen.dart';
 import 'package:dbms_proj/Screens/register_user_screen.dart';
+import 'package:dbms_proj/Screens/admin_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Get Supabase client instance
@@ -231,6 +232,22 @@ class _HomeState extends State<Home> {
                       context,
                       MaterialPageRoute(
                           builder: (context) => const RegisterUserScreen()),
+                    );
+                  },
+                ),
+              // Admin Dashboard option (only for admins)
+              if (_isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings,
+                      color: AppColors.purpleLight),
+                  title: const Text('Admin Dashboard'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to admin dashboard screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AdminDashboardScreen()),
                     );
                   },
                 ),
