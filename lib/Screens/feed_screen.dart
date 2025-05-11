@@ -319,116 +319,136 @@ class _FeedScreenState extends State<FeedScreen> {
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SizedBox(
-          width: 400,
-          child: Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Comments',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 12),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _fetchComments(postId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final comments = snapshot.data ?? [];
-                    if (comments.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No comments yet.',
-                            style: TextStyle(color: Colors.black54)),
-                      );
-                    }
-                    return SizedBox(
-                      height: 200,
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: comments.length,
-                        separatorBuilder: (_, __) => const Divider(height: 16),
-                        itemBuilder: (context, idx) {
-                          final c = comments[idx];
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundImage: NetworkImage(
-                                    c['profilepicture'] ??
-                                        'https://i.pravatar.cc/150?img=1'),
-                                backgroundColor: Colors.purple[50],
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(c['name'] ?? 'User',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: Colors.purple)),
-                                    Text(c['content'] ?? '',
-                                        style: const TextStyle(fontSize: 14)),
-                                    Text(
-                                      c['created_at'] != null
-                                          ? _getTimeAgo(
-                                              DateTime.parse(c['created_at']))
-                                          : '',
-                                      style: const TextStyle(
-                                          fontSize: 11, color: Colors.black45),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 18),
-                const Divider(),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: commentController,
-                  decoration: const InputDecoration(
-                    hintText: 'Write your comment...',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+        child: LayoutBuilder(
+          builder: (context, constraints) => ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 400,
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 18.0,
+                right: 18.0,
+                top: 18.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 18.0,
+              ),
+              child: SingleChildScrollView(
+                reverse: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final comment = commentController.text.trim();
-                        if (comment.isNotEmpty) {
-                          await _addComment(postId, comment);
-                          Navigator.pop(context);
-                          // Reopen dialog to refresh comments
-                          Future.delayed(const Duration(milliseconds: 200), () {
-                            _showCommentDialog(postId);
-                          });
+                    const Text('Comments',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _fetchComments(postId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
+                        final comments = snapshot.data ?? [];
+                        if (comments.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Text('No comments yet.',
+                                style: TextStyle(color: Colors.black54)),
+                          );
+                        }
+                        return SizedBox(
+                          height: 200,
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: comments.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 16),
+                            itemBuilder: (context, idx) {
+                              final c = comments[idx];
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundImage: NetworkImage(
+                                        c['profilepicture'] ??
+                                            'https://i.pravatar.cc/150?img=1'),
+                                    backgroundColor: Colors.purple[50],
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(c['name'] ?? 'User',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                color: Colors.purple)),
+                                        Text(c['content'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        Text(
+                                          c['created_at'] != null
+                                              ? _getTimeAgo(DateTime.parse(
+                                                  c['created_at']))
+                                              : '',
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black45),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        );
                       },
-                      child: const Text('Post Comment'),
+                    ),
+                    const SizedBox(height: 18),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: commentController,
+                      decoration: const InputDecoration(
+                        hintText: 'Write your comment...',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final comment = commentController.text.trim();
+                            if (comment.isNotEmpty) {
+                              await _addComment(postId, comment);
+                              Navigator.pop(context);
+                              // Reopen dialog to refresh comments
+                              Future.delayed(const Duration(milliseconds: 200),
+                                  () {
+                                _showCommentDialog(postId);
+                              });
+                            }
+                          },
+                          child: const Text('Post Comment'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
