@@ -215,31 +215,58 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Stats cards in a grid
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.8, // Increased for more height
-            children: [
-              _buildStatCard('Total Users', _stats['totalUsers'].toString(),
-                  Icons.people, AppColors.purpleLight),
-              _buildStatCard(
-                  'Total Messages',
-                  _stats['totalMessages'].toString(),
-                  Icons.message,
-                  Colors.green),
-              _buildStatCard(
-                  'Departments',
-                  _stats['totalDepartments'].toString(),
-                  Icons.business,
-                  Colors.orange),
-              _buildStatCard('Admin Users', _stats['totalAdmins'].toString(),
-                  Icons.admin_panel_settings, Colors.blue),
-            ],
+          const SizedBox(
+              height:
+                  24), // Stats cards - using a more flexible layout with increased height
+          SizedBox(
+            height: 230, // Further increased height to prevent any overflow
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                            'Total Users',
+                            _stats['totalUsers'].toString(),
+                            Icons.people,
+                            AppColors.purpleLight),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatCard(
+                            'Total Messages',
+                            _stats['totalMessages'].toString(),
+                            Icons.message,
+                            Colors.green),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                            'Departments',
+                            _stats['totalDepartments'].toString(),
+                            Icons.business,
+                            Colors.orange),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatCard(
+                            'Admin Users',
+                            _stats['totalAdmins'].toString(),
+                            Icons.admin_panel_settings,
+                            Colors.blue),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 32),
@@ -295,7 +322,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
@@ -307,33 +334,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             end: Alignment.bottomRight,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Container(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Icon(icon, color: Colors.white, size: 24),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
