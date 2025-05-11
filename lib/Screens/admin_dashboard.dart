@@ -59,33 +59,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           .from('globalchat')
           .select('*, users(name, email)')
           .order('created_at', ascending: false)
-          .limit(50);
+          .limit(50); // Get statistics using count() method
+      final totalUsers = await supabase.from('users').count();
 
-      // Get statistics
-      final totalUsers =
-          await supabase.from('users').select('userid', {'count': 'exact'});
+      final totalMessages = await supabase.from('globalchat').count();
 
-      final totalMessages = await supabase
-          .from('globalchat')
-          .select('messageid', {'count': 'exact'});
+      final totalDepartments = await supabase.from('department').count();
 
-      final totalDepartments = await supabase
-          .from('department')
-          .select('departmentid', {'count': 'exact'});
-
-      final totalAdmins = await supabase
-          .from('users')
-          .select('userid', {'count': 'exact'}).eq('isadmin', true);
+      final totalAdmins =
+          await supabase.from('users').select().eq('isadmin', true).count();
 
       if (mounted) {
         setState(() {
           _users = List<Map<String, dynamic>>.from(usersResponse);
           _messages = List<Map<String, dynamic>>.from(messagesResponse);
           _stats = {
-            'totalUsers': totalUsers.count ?? 0,
-            'totalMessages': totalMessages.count ?? 0,
-            'totalDepartments': totalDepartments.count ?? 0,
-            'totalAdmins': totalAdmins.count ?? 0,
+            'totalUsers': totalUsers ?? 0,
+            'totalMessages': totalMessages ?? 0,
+            'totalDepartments': totalDepartments ?? 0,
+            'totalAdmins': totalAdmins ?? 0,
           };
           _isLoading = false;
         });

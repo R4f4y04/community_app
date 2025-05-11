@@ -108,7 +108,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _chatSubscription = supabase
         .from('globalchat')
         .stream(primaryKey: ['messageid'])
-        .order('created_at')
+        .order('timestamp')
         .listen((List<Map<String, dynamic>> data) {
           if (mounted) {
             setState(() {
@@ -154,7 +154,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       final response = await supabase
           .from('globalchat')
           .select('*, users(*)')
-          .order('created_at', ascending: true);
+          .order('timestamp', ascending: true);
 
       if (mounted) {
         setState(() {
@@ -181,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       List<Map<String, dynamic>> messages) {
     return messages.map((msg) {
       final user = msg['users'];
-      final timestamp = DateTime.parse(msg['created_at']);
+      final timestamp = DateTime.parse(msg['timestamp']);
       final now = DateTime.now();
       final difference = now.difference(timestamp);
 
@@ -209,7 +209,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         'initials': initials,
         'message': msg['message'] ?? '',
         'timestamp': formattedTime,
-        'created_at': timestamp,
+        'timestamp': timestamp,
         'avatar': avatarUrl.isNotEmpty ? avatarUrl : null,
         'isMe': isCurrentUser,
       };
@@ -245,7 +245,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         await supabase.from('globalchat').insert({
           'user_id': _userId,
           'message': messageText,
-          'created_at': DateTime.now().toIso8601String(),
+          'timestamp': DateTime.now().toIso8601String(),
         });
       }
     } catch (e) {
@@ -508,13 +508,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             itemBuilder: (context, index) {
               // Show date header if it's the first message or date changes from previous
               final bool showDateHeader = index == 0 ||
-                  !_isSameDay(_messages[index]['created_at'],
-                      _messages[index - 1]['created_at']);
+                  !_isSameDay(_messages[index]['timestamp'],
+                      _messages[index - 1]['timestamp']);
 
               return Column(
                 children: [
                   if (showDateHeader)
-                    _buildDateHeader(_messages[index]['created_at']),
+                    _buildDateHeader(_messages[index]['timestamp']),
                   _buildMessageBubble(_messages[index]),
                 ],
               );
