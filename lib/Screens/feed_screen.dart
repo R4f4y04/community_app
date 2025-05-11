@@ -296,38 +296,142 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  // Fetch comments for a post
+  Future<List<Map<String, dynamic>>> _fetchComments(String postId) async {
+    try {
+      final response = await supabase
+          .from('comment_details')
+          .select()
+          .eq('postid', postId)
+          .order('created_at', ascending: true);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('Error fetching comments: $e');
+      return [];
+    }
+  }
+
   // Show comment dialog
   void _showCommentDialog(String postId) {
     final TextEditingController commentController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Comment'),
-        content: TextField(
-          controller: commentController,
-          decoration: const InputDecoration(
-            hintText: 'Write your comment...',
-            border: OutlineInputBorder(),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SizedBox(
+          width: 400,
+          child: Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Comments',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 12),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _fetchComments(postId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final comments = snapshot.data ?? [];
+                    if (comments.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('No comments yet.',
+                            style: TextStyle(color: Colors.black54)),
+                      );
+                    }
+                    return SizedBox(
+                      height: 200,
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: comments.length,
+                        separatorBuilder: (_, __) => const Divider(height: 16),
+                        itemBuilder: (context, idx) {
+                          final c = comments[idx];
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundImage: NetworkImage(
+                                    c['profilepicture'] ??
+                                        'https://i.pravatar.cc/150?img=1'),
+                                backgroundColor: Colors.purple[50],
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(c['name'] ?? 'User',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: Colors.purple)),
+                                    Text(c['content'] ?? '',
+                                        style: const TextStyle(fontSize: 14)),
+                                    Text(
+                                      c['created_at'] != null
+                                          ? _getTimeAgo(
+                                              DateTime.parse(c['created_at']))
+                                          : '',
+                                      style: const TextStyle(
+                                          fontSize: 11, color: Colors.black45),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+                const Divider(),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: commentController,
+                  decoration: const InputDecoration(
+                    hintText: 'Write your comment...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final comment = commentController.text.trim();
+                        if (comment.isNotEmpty) {
+                          await _addComment(postId, comment);
+                          Navigator.pop(context);
+                          // Reopen dialog to refresh comments
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            _showCommentDialog(postId);
+                          });
+                        }
+                      },
+                      child: const Text('Post Comment'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          maxLines: 3,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final comment = commentController.text.trim();
-              if (comment.isNotEmpty) {
-                _addComment(postId, comment);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Post Comment'),
-          ),
-        ],
       ),
     );
   }
@@ -560,13 +664,27 @@ class _FeedScreenState extends State<FeedScreen> {
                             padding: const EdgeInsets.all(8),
                             itemBuilder: (context, index) {
                               final post = filteredPosts[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 18),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.purple.withOpacity(0.08),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color:
+                                        Colors.purpleAccent.withOpacity(0.18),
+                                    width: 1.2,
+                                  ),
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 18),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -575,11 +693,12 @@ class _FeedScreenState extends State<FeedScreen> {
                                       Row(
                                         children: [
                                           CircleAvatar(
-                                            radius: 20,
+                                            radius: 22,
                                             backgroundImage:
                                                 NetworkImage(post['avatar']),
+                                            backgroundColor: Colors.purple[50],
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 14),
                                           Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -589,12 +708,13 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 16,
+                                                  color: Colors.purple,
                                                 ),
                                               ),
                                               Text(
                                                 post['timestamp'],
                                                 style: const TextStyle(
-                                                  color: Colors.black54,
+                                                  color: Colors.black45,
                                                   fontSize: 12,
                                                 ),
                                               ),
@@ -604,44 +724,50 @@ class _FeedScreenState extends State<FeedScreen> {
                                           Chip(
                                             label: Text(
                                               post['department'],
-                                              style:
-                                                  const TextStyle(fontSize: 12),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
-                                            backgroundColor: Colors.grey[200],
+                                            backgroundColor:
+                                                Colors.purpleAccent,
                                             padding: EdgeInsets.zero,
                                             materialTapTargetSize:
                                                 MaterialTapTargetSize
                                                     .shrinkWrap,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ],
                                       ),
-
-                                      const SizedBox(height: 16),
-
+                                      const SizedBox(height: 18),
                                       // Post Content
                                       Text(
                                         post['title'],
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 18,
+                                          fontSize: 19,
+                                          color: Colors.black87,
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 7),
                                       Text(
                                         post['content'],
                                         style: const TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 15,
+                                          color: Colors.black87,
                                         ),
                                       ),
-
-                                      const SizedBox(height: 16),
-
+                                      const SizedBox(height: 18),
                                       // Interaction Buttons
                                       Row(
                                         children: [
                                           IconButton(
                                             icon: const Icon(
-                                                Icons.thumb_up_outlined),
+                                                Icons.thumb_up_alt_rounded),
                                             onPressed: () =>
                                                 _likePost(post['id']),
                                             visualDensity:
@@ -651,13 +777,14 @@ class _FeedScreenState extends State<FeedScreen> {
                                           Text(
                                             '${post['likes']}',
                                             style: const TextStyle(
-                                              color: Colors.black54,
+                                              color: Colors.purple,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                          const SizedBox(width: 16),
+                                          const SizedBox(width: 18),
                                           IconButton(
                                             icon: const Icon(
-                                                Icons.comment_outlined),
+                                                Icons.mode_comment_rounded),
                                             onPressed: () =>
                                                 _showCommentDialog(post['id']),
                                             visualDensity:
@@ -667,13 +794,14 @@ class _FeedScreenState extends State<FeedScreen> {
                                           Text(
                                             '${post['comments']}',
                                             style: const TextStyle(
-                                              color: Colors.black54,
+                                              color: Colors.purple,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           const Spacer(),
                                           IconButton(
-                                            icon: const Icon(
-                                                Icons.share_outlined),
+                                            icon:
+                                                const Icon(Icons.share_rounded),
                                             onPressed: () {},
                                             visualDensity:
                                                 VisualDensity.compact,
