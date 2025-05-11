@@ -173,14 +173,31 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       const SizedBox(width: 4),
                       Text(project['department']?['name'] ?? '',
                           style: const TextStyle(fontSize: 12)),
-                      const Spacer(),
-                      const Icon(Icons.calendar_today, size: 16),
-                      const SizedBox(width: 4),
-                      Text(project['deadline'] ?? '',
-                          style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 12),
+                  // Progress bar and percentage
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: (project['progress'] ?? 0.0) as double,
+                          backgroundColor: AppColors.surfaceVariant,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getStatusColor(project['status'] ?? ''),
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Progress: ${((project['progress'] ?? 0.0) * 100).toInt()}%',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Text('Team Members:',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
@@ -200,11 +217,26 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         children: [
                           for (final m in members)
                             Chip(
-                              avatar: CircleAvatar(
-                                backgroundImage: NetworkImage(m['profile'] ??
-                                    'https://i.pravatar.cc/150?img=1'),
-                                radius: 12,
-                              ),
+                              avatar: (m['profile'] != null &&
+                                      (m['profile'] as String).isNotEmpty)
+                                  ? CircleAvatar(
+                                      backgroundImage:
+                                          NetworkImage(m['profile']),
+                                      radius: 12,
+                                    )
+                                  : CircleAvatar(
+                                      backgroundColor: Colors.primaries[
+                                          (m['name'] ?? '').hashCode %
+                                              Colors.primaries.length],
+                                      radius: 12,
+                                      child: Text(
+                                        _getInitials(m['name'] ?? 'U'),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12),
+                                      ),
+                                    ),
                               label: Text(m['name'] ?? 'User'),
                             ),
                         ],
@@ -237,21 +269,36 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         separatorBuilder: (_, __) => const Divider(height: 16),
                         itemBuilder: (context, idx) {
                           final u = updates[idx];
+                          final user = u['user'] ?? {};
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundImage: NetworkImage(u['user']
-                                        ?['profile'] ??
-                                    'https://i.pravatar.cc/150?img=1'),
-                              ),
+                              (user['profile'] != null &&
+                                      (user['profile'] as String).isNotEmpty)
+                                  ? CircleAvatar(
+                                      radius: 16,
+                                      backgroundImage:
+                                          NetworkImage(user['profile']),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Colors.primaries[
+                                          (user['name'] ?? '').hashCode %
+                                              Colors.primaries.length],
+                                      child: Text(
+                                        _getInitials(user['name'] ?? 'U'),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14),
+                                      ),
+                                    ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(u['user']?['name'] ?? 'User',
+                                    Text(user['name'] ?? 'User',
                                         style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14)),
@@ -287,6 +334,52 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    } else if (parts.length > 1) {
+      return (parts[0].substring(0, 1) + parts[1].substring(0, 1))
+          .toUpperCase();
+    }
+    return 'U';
+  }
+
+  Widget _buildUserAvatar(String? name, String? profileUrl,
+      {double radius = 12}) {
+    if (profileUrl != null && profileUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: NetworkImage(profileUrl),
+        backgroundColor: Colors.grey[200],
+      );
+    }
+    String initials = '';
+    if (name != null && name.isNotEmpty) {
+      final parts = name.trim().split(' ');
+      if (parts.length == 1) {
+        initials = parts[0].substring(0, 1).toUpperCase();
+      } else {
+        initials = parts[0].substring(0, 1).toUpperCase() +
+            parts[1].substring(0, 1).toUpperCase();
+      }
+    } else {
+      initials = '?';
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.purpleLight,
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: radius,
         ),
       ),
     );
