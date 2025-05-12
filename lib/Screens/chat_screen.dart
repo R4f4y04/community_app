@@ -86,10 +86,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           .single();
 
       setState(() {
-        _userName = userData['name'] ?? 'User';
-        _userDepartmentId = userData['departmentid'];
-        _userDepartmentName = userData['department']?['name'] ?? '';
-        _avatarUrl = userData['profile']['profilepicture'] ?? '';
+        _userName = userData['name']?.toString() ?? 'User';
+        _userDepartmentId = userData['departmentid']?.toString();
+        _userDepartmentName = userData['department']?['name']?.toString() ?? '';
+        _avatarUrl = userData['profile']['profilepicture']?.toString() ?? '';
         _isAdmin = userData['isadmin'] == true; // Set admin status
 
         if (_avatarUrl.isEmpty) {
