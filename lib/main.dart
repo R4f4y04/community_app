@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/Screens/login.dart';
 import 'package:dbms_proj/Screens/home.dart';
 import 'package:dbms_proj/Screens/admin_dashboard.dart';
 import 'package:dbms_proj/Screens/register_user_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:dbms_proj/util/theme_provider.dart';
 
 Future<void> main() async {
   await Supabase.initialize(
@@ -20,18 +21,25 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Community App',
-      debugShowCheckedModeBanner: false,
-      theme: darkTheme,
-      home: const LoginScreen(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const Home(),
-        '/admin_dashboard': (context) => const AdminDashboardScreen(),
-        '/register_user': (context) => const RegisterUserScreen(),
-      },
-      initialRoute: '/login',
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Community App',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.theme,
+            home: const LoginScreen(),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/home': (context) => const Home(),
+              '/admin_dashboard': (context) => const AdminDashboardScreen(),
+              '/register_user': (context) => const RegisterUserScreen(),
+            },
+            initialRoute: '/login',
+          );
+        },
+      ),
     );
   }
 }

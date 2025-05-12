@@ -86,6 +86,96 @@ final ThemeData darkTheme = ThemeData(
   ),
 );
 
+// --- Light Theme Colors ---
+final Color _lightBackground = Color(0xFFFFFFFF);
+final Color _lightSurface = Color(0xFFF5F5F5);
+final Color _lightElevatedSurface = Color(0xFFFFFFFF);
+final Color _lightPrimaryText = Color(0xFF212121);
+final Color _lightSecondaryText = Color(0xFF757575);
+final Color _lightAccentPurple = Color(0xFF8A2BE2);
+final Color _lightAccentDarkPurple = Color(0xFF6A0DAD);
+final Color _lightDivider = Color(0xFFEEEEEE);
+final Color _lightHighlight = Color(0xFFF3E5F5);
+
+final ThemeData lightTheme = ThemeData(
+  brightness: Brightness.light,
+  scaffoldBackgroundColor: _lightBackground,
+  canvasColor: _lightSurface,
+  cardColor: _lightSurface,
+  dividerColor: _lightDivider,
+  primaryColor: _lightAccentPurple,
+  colorScheme: ColorScheme.light().copyWith(
+    primary: _lightAccentPurple,
+    primaryContainer: _lightAccentDarkPurple,
+    onPrimary: _lightBackground,
+    secondary: _lightAccentPurple,
+    surface: _lightSurface,
+    background: _lightBackground,
+    onSurface: _lightPrimaryText,
+    onBackground: _lightPrimaryText,
+  ),
+  appBarTheme: AppBarTheme(
+    backgroundColor: _lightBackground,
+    foregroundColor: _lightPrimaryText,
+    elevation: 1,
+    centerTitle: true,
+    iconTheme: IconThemeData(color: _lightSecondaryText),
+    titleTextStyle: TextStyle(
+      color: _lightPrimaryText,
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  iconTheme: IconThemeData(color: _lightSecondaryText),
+  textTheme: TextTheme(
+    titleLarge: TextStyle(
+      color: _lightPrimaryText,
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+    ),
+    bodyLarge: TextStyle(color: _lightPrimaryText),
+    bodyMedium: TextStyle(color: _lightSecondaryText),
+    labelLarge: TextStyle(
+      color: _lightPrimaryText,
+      fontWeight: FontWeight.w500,
+    ),
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: _lightAccentPurple,
+      foregroundColor: _lightBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  ),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: _lightAccentPurple,
+    foregroundColor: _lightBackground,
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: _lightElevatedSurface,
+    labelStyle: TextStyle(color: _lightSecondaryText),
+    hintStyle: TextStyle(color: _lightSecondaryText),
+    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _lightDivider),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _lightDivider),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _lightAccentPurple),
+    ),
+  ),
+  dividerTheme: DividerThemeData(color: _lightDivider),
+  highlightColor: _lightHighlight,
+);
+
 // Color palette for use in legacy code
 class AppColors {
   static const Color background = Color(0xFF121212);
@@ -99,8 +189,8 @@ class AppColors {
 }
 
 class AppStyles {
-  // [InputDecoration] conforming to the dark theme
-  static InputDecoration getInputDecoration(
+  /// Input decoration consistent with the dark theme
+  static InputDecoration getDarkInputDecoration(
     BuildContext context, {
     String? labelText,
     String? hintText,
@@ -121,6 +211,36 @@ class AppStyles {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: theme.colorScheme.primary),
+      ),
+    );
+  }
+
+  /// Input decoration consistent with the light theme
+  static InputDecoration getLightInputDecoration(
+    BuildContext context, {
+    String? labelText,
+    String? hintText,
+  }) {
+    final theme = Theme.of(context);
+    return InputDecoration(
+      filled: true,
+      fillColor: theme.cardColor,
+      labelText: labelText,
+      hintText: hintText,
+      labelStyle: theme.textTheme.bodyMedium,
+      hintStyle: theme.textTheme.bodyMedium,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: theme.dividerColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: theme.dividerColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

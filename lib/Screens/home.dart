@@ -7,7 +7,10 @@ import 'package:dbms_proj/Screens/chat_screen.dart';
 import 'package:dbms_proj/Screens/projects_screen.dart';
 import 'package:dbms_proj/Screens/profile_screen.dart';
 import 'package:dbms_proj/Screens/admin_dashboard.dart';
+import 'package:dbms_proj/Screens/settings_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:dbms_proj/util/theme_provider.dart';
 
 // Get Supabase client instance
 final supabase = Supabase.instance.client;
@@ -211,10 +214,21 @@ class _HomeState extends State<Home> {
                 leading:
                     const Icon(Icons.settings, color: AppColors.purpleLight),
                 title: const Text('Settings'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  // Navigate to settings page (to be implemented)
-                  showInfoSnackBar(context, 'Settings page coming soon!');
+                  // Navigate to settings page with theme control
+                  final themeProvider =
+                      Provider.of<ThemeProvider>(context, listen: false);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SettingsScreen(
+                        isDarkMode: themeProvider.isDarkMode,
+                        onThemeChanged: (isDark) =>
+                            themeProvider.toggleTheme(isDark),
+                      ),
+                    ),
+                  );
                 },
               ),
               // Admin Dashboard option (only for admins)
