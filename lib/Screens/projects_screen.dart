@@ -156,7 +156,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       debugPrint('Fetching members for: ' + members.toString());
       final response = await supabase
           .from('users')
-          .select('userid, name, profile:Profile(ProfilePicture)')
+          .select('userid, name, profile:profile(profilepicture)')
           .inFilter('userid', members);
       debugPrint('Fetched members: ' + response.toString());
       return List<Map<String, dynamic>>.from(response);
