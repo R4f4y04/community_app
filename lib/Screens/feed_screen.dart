@@ -254,6 +254,8 @@ class _FeedScreenState extends State<FeedScreen> {
         'likes_count': 0,
         'comments_count': 0,
       });
+      // Immediately reload posts for instant UI feedback
+      await _loadPosts();
 
       // Reload posts (should happen automatically via subscription)
     } catch (e) {
