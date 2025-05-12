@@ -23,7 +23,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'Community App',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: darkTheme,
       home: const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),

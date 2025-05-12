@@ -643,14 +643,25 @@ class _FeedScreenState extends State<FeedScreen> {
                       _selectedDepartment = _departments[index];
                     });
                   },
-                  selectedColor: Colors.purpleAccent,
-                  backgroundColor: Colors.grey[200],
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black54,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurface,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).dividerColor,
+                    width: 1.2,
+                  ),
                 ),
               );
             },
@@ -725,18 +736,21 @@ class _FeedScreenState extends State<FeedScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 18),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).cardColor,
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.purple.withOpacity(0.08),
+                                      color: Theme.of(context)
+                                          .colorScheme.primary
+                                          .withOpacity(0.08),
                                       blurRadius: 16,
                                       offset: const Offset(0, 8),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color:
-                                        Colors.purpleAccent.withOpacity(0.18),
+                                    color: Theme.of(context)
+                                        .colorScheme.primary
+                                        .withOpacity(0.18),
                                     width: 1.2,
                                   ),
                                 ),
@@ -763,16 +777,21 @@ class _FeedScreenState extends State<FeedScreen> {
                                             children: [
                                               Text(
                                                 post['author'],
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 16,
-                                                  color: Colors.purple,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
                                                 ),
                                               ),
                                               Text(
                                                 post['timestamp'],
-                                                style: const TextStyle(
-                                                  color: Colors.black45,
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.7),
                                                   fontSize: 12,
                                                 ),
                                               ),
@@ -782,14 +801,17 @@ class _FeedScreenState extends State<FeedScreen> {
                                           Chip(
                                             label: Text(
                                               post['department'],
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.white,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            backgroundColor:
-                                                Colors.purpleAccent,
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                             padding: EdgeInsets.zero,
                                             materialTapTargetSize:
                                                 MaterialTapTargetSize
@@ -805,18 +827,22 @@ class _FeedScreenState extends State<FeedScreen> {
                                       // Post Content
                                       Text(
                                         post['title'],
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 19,
-                                          color: Colors.black87,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 7),
                                       Text(
                                         post['content'],
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 15,
-                                          color: Colors.black87,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 18),
@@ -828,10 +854,14 @@ class _FeedScreenState extends State<FeedScreen> {
                                               _likedPostIds.contains(post['id'])
                                                   ? Icons.thumb_up_alt
                                                   : Icons.thumb_up_alt_outlined,
-                                              color: _likedPostIds
-                                                      .contains(post['id'])
-                                                  ? Colors.purpleAccent
-                                                  : Colors.purpleAccent
+                                              color: _likedPostIds.contains(
+                                                      post['id'])
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
                                                       .withOpacity(0.5),
                                             ),
                                             onPressed: () =>
@@ -841,8 +871,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                           ),
                                           Text(
                                             '${post['likes']}',
-                                            style: const TextStyle(
-                                              color: Colors.purple,
+                                            style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -854,12 +886,16 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 _showCommentDialog(post['id']),
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            color: Colors.purpleAccent,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                           Text(
                                             '${post['comments']}',
-                                            style: const TextStyle(
-                                              color: Colors.purple,
+                                            style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -870,7 +906,9 @@ class _FeedScreenState extends State<FeedScreen> {
                                             onPressed: () {},
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            color: Colors.purpleAccent,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ],
                                       ),

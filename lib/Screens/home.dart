@@ -21,7 +21,6 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-  bool _isLoading = true;
 
   // User data
   Map<String, dynamic>? _userData;
@@ -56,7 +55,7 @@ class _HomeState extends State<Home> {
   // Fetch user profile from Supabase
   Future<void> _fetchUserProfile() async {
     setState(() {
-      _isLoading = true;
+      // _isLoading = true;
     });
 
     try {
@@ -90,13 +89,13 @@ class _HomeState extends State<Home> {
         // Generate initials from name
         _userInitials = _getUserInitials(_userName);
 
-        _isLoading = false;
+        // _isLoading = false;
       });
     } catch (e) {
       print('Error fetching profile: $e');
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          // _isLoading = false;
         });
       }
     }
