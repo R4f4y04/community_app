@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'
-    show PostgresChangeEvent;
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent;
 import 'dart:async';
+import 'post_detail_screen.dart';
 
 // Get Supabase client instance
 final supabase = Supabase.instance.client;
@@ -718,165 +718,187 @@ class _FeedScreenState extends State<FeedScreen> {
                             padding: const EdgeInsets.all(8),
                             itemBuilder: (context, index) {
                               final post = filteredPosts[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 18),
-                                decoration: BoxDecoration(
-                                  color: theme.cardColor,
-                                  borderRadius: BorderRadius.circular(18),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          colorScheme.primary.withOpacity(0.08),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 8),
+                              return GestureDetector(
+                                onTap: () async {
+                                  // Navigate to PostDetailScreen with animation
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PostDetailScreen(
+                                        post: post,
+                                        isLiked: _likedPostIds.contains(post['id']),
+                                        onLike: () => _toggleLikePost(post['id']),
+                                        onComment: () => _showCommentDialog(post['id']),
+                                        onShare: () {
+                                          // TODO: Implement share functionality
+                                        },
+                                      ),
                                     ),
-                                  ],
-                                  border: Border.all(
-                                    color:
-                                        colorScheme.primary.withOpacity(0.18),
-                                    width: 1.2,
+                                  );
+                                  // Optionally reload posts after returning
+                                  _loadPosts();
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 18),
+                                  decoration: BoxDecoration(
+                                    color: theme.cardColor,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colorScheme.primary.withOpacity(0.08),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: colorScheme.primary.withOpacity(0.18),
+                                      width: 1.2,
+                                    ),
                                   ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 18, vertical: 18),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Author Row
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 22,
-                                            backgroundImage:
-                                                NetworkImage(post['avatar']),
-                                            backgroundColor: colorScheme.primary
-                                                .withOpacity(0.08),
-                                          ),
-                                          const SizedBox(width: 14),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                post['author'],
-                                                style: theme
-                                                    .textTheme.titleMedium
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 18, vertical: 18),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Author Row
+                                        Row(
+                                          children: [
+                                            Hero(
+                                              tag: 'avatar_${post['id']}',
+                                              child: CircleAvatar(
+                                                radius: 22,
+                                                backgroundImage:
+                                                    NetworkImage(post['avatar']),
+                                                backgroundColor: colorScheme.primary
+                                                    .withOpacity(0.08),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  post['author'],
+                                                  style: theme
+                                                      .textTheme.titleMedium
+                                                      ?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: colorScheme.primary,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  post['timestamp'],
+                                                  style: theme.textTheme.bodySmall
+                                                      ?.copyWith(
+                                                    color: colorScheme.onSurface
+                                                        .withOpacity(0.7),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const Spacer(),
+                                            Chip(
+                                              label: Text(
+                                                post['department'],
+                                                style: theme.textTheme.labelLarge
                                                     ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: colorScheme.primary,
+                                                  color: colorScheme.onPrimary,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                              Text(
-                                                post['timestamp'],
-                                                style: theme.textTheme.bodySmall
-                                                    ?.copyWith(
-                                                  color: colorScheme.onSurface
-                                                      .withOpacity(0.7),
-                                                ),
+                                              backgroundColor:
+                                                  colorScheme.primary,
+                                              padding: EdgeInsets.zero,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                            ],
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 18),
+                                        // Post Content
+                                        Text(
+                                          post['title'],
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurface,
                                           ),
-                                          const Spacer(),
-                                          Chip(
-                                            label: Text(
-                                              post['department'],
-                                              style: theme.textTheme.labelLarge
+                                        ),
+                                        const SizedBox(height: 7),
+                                        Text(
+                                          post['content'],
+                                          maxLines: 6,
+                                          overflow: TextOverflow.ellipsis,
+                                          style:
+                                              theme.textTheme.bodyLarge?.copyWith(
+                                            color: colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 18),
+                                        // Interaction Buttons
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                _likedPostIds.contains(post['id'])
+                                                    ? Icons.thumb_up_alt
+                                                    : Icons.thumb_up_alt_outlined,
+                                                color: _likedPostIds
+                                                        .contains(post['id'])
+                                                    ? colorScheme.primary
+                                                    : colorScheme.primary
+                                                        .withOpacity(0.5),
+                                              ),
+                                              onPressed: () => _toggleLikePost(post['id']),
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                            ),
+                                            Text(
+                                              '${post['likes']}',
+                                              style: theme.textTheme.bodyMedium
                                                   ?.copyWith(
-                                                color: colorScheme.onPrimary,
+                                                color: colorScheme.primary,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            backgroundColor:
-                                                colorScheme.primary,
-                                            padding: EdgeInsets.zero,
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 18),
-                                      // Post Content
-                                      Text(
-                                        post['title'],
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 7),
-                                      Text(
-                                        post['content'],
-                                        style:
-                                            theme.textTheme.bodyLarge?.copyWith(
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      // Interaction Buttons
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(
-                                              _likedPostIds.contains(post['id'])
-                                                  ? Icons.thumb_up_alt
-                                                  : Icons.thumb_up_alt_outlined,
-                                              color: _likedPostIds
-                                                      .contains(post['id'])
-                                                  ? colorScheme.primary
-                                                  : colorScheme.primary
-                                                      .withOpacity(0.5),
-                                            ),
-                                            onPressed: () =>
-                                                _toggleLikePost(post['id']),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                          Text(
-                                            '${post['likes']}',
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
+                                            const SizedBox(width: 18),
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.mode_comment_rounded),
+                                              onPressed: () => _showCommentDialog(post['id']),
+                                              visualDensity:
+                                                  VisualDensity.compact,
                                               color: colorScheme.primary,
-                                              fontWeight: FontWeight.w600,
                                             ),
-                                          ),
-                                          const SizedBox(width: 18),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.mode_comment_rounded),
-                                            onPressed: () =>
-                                                _showCommentDialog(post['id']),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            color: colorScheme.primary,
-                                          ),
-                                          Text(
-                                            '${post['comments']}',
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
+                                            Text(
+                                              '${post['comments']}',
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                color: colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            IconButton(
+                                              icon:
+                                                  const Icon(Icons.share_rounded),
+                                              onPressed: () {},
+                                              visualDensity:
+                                                  VisualDensity.compact,
                                               color: colorScheme.primary,
-                                              fontWeight: FontWeight.w600,
                                             ),
-                                          ),
-                                          const Spacer(),
-                                          IconButton(
-                                            icon:
-                                                const Icon(Icons.share_rounded),
-                                            onPressed: () {},
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            color: colorScheme.primary,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
