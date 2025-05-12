@@ -269,7 +269,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     Text('Team Members', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     SizedBox(
-                      height: 48,
+                      height: 60, // Increased from 48 to 60 to prevent overflow
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: members.length,
@@ -279,6 +279,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           final profileUrl = m['profileUrl'] ?? '';
                           final name = m['name'] ?? 'User';
                           return Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               CircleAvatar(
                                 radius: 18,
@@ -298,10 +299,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                       )
                                     : null,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                name.split(' ').first,
-                                style: theme.textTheme.labelSmall,
+                              const SizedBox(height: 6), // Increased spacing
+                              SizedBox(
+                                width: 48,
+                                child: Text(
+                                  name.split(' ').first,
+                                  style: theme.textTheme.labelSmall,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ],
                           );
