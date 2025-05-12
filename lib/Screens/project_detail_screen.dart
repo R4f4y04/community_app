@@ -214,49 +214,55 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                       ),
                                       builder: (context) {
                                         double tempProgress = progress ?? 0.0;
-                                        return Padding(
-                                          padding: const EdgeInsets.all(24.0),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text('Update Progress',
-                                                  style: theme
-                                                      .textTheme.titleMedium),
-                                              Slider(
-                                                value: tempProgress,
-                                                min: 0.0,
-                                                max: 1.0,
-                                                divisions: 20,
-                                                label:
-                                                    '${(tempProgress * 100).toInt()}%',
-                                                onChanged: (v) {
-                                                  setState(() {
-                                                    tempProgress = v;
-                                                  });
-                                                },
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
-                                                    child: const Text('Cancel'),
-                                                  ),
-                                                  ElevatedButton(
-                                                    onPressed: () async {
-                                                      await _updateProgress(
-                                                          tempProgress);
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: const Text('Update'),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                        return StatefulBuilder(
+                                          builder: (context, setStateModal) =>
+                                              Padding(
+                                            padding: const EdgeInsets.all(24.0),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text('Update Progress',
+                                                    style: theme.textTheme
+                                                        .titleMedium),
+                                                Slider(
+                                                  value: tempProgress,
+                                                  min: 0.0,
+                                                  max: 1.0,
+                                                  divisions: 20,
+                                                  label:
+                                                      '${(tempProgress * 100).toInt()}%',
+                                                  onChanged: (v) {
+                                                    setStateModal(() {
+                                                      tempProgress = v;
+                                                    });
+                                                  },
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                              context),
+                                                      child:
+                                                          const Text('Cancel'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () async {
+                                                        await _updateProgress(
+                                                            tempProgress);
+                                                        Navigator.pop(context);
+                                                      },
+                                                      child: const Text(
+                                                          'Update'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         );
                                       },
