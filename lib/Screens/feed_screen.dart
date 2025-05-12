@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show PostgresChangeEvent;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show PostgresChangeEvent;
 import 'dart:async';
 import 'post_detail_screen.dart';
 
@@ -347,151 +348,6 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  // Show comment dialog
-  void _showCommentDialog(String postId) {
-    final TextEditingController commentController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: LayoutBuilder(
-          builder: (context, constraints) => ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 400,
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 18.0,
-                right: 18.0,
-                top: 18.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 18.0,
-              ),
-              child: SingleChildScrollView(
-                reverse: true,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Comments',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 12),
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _fetchComments(postId),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-                        final comments = snapshot.data ?? [];
-                        if (comments.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Text('No comments yet.',
-                                style: TextStyle(color: Colors.black54)),
-                          );
-                        }
-                        return SizedBox(
-                          height: 200,
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: comments.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 16),
-                            itemBuilder: (context, idx) {
-                              final c = comments[idx];
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundImage: NetworkImage(
-                                        c['profilepicture'] ??
-                                            'https://i.pravatar.cc/150?img=1'),
-                                    backgroundColor: Colors.purple[50],
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(c['name'] ?? 'User',
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                                color: Colors.purple)),
-                                        Text(c['content'] ?? '',
-                                            style:
-                                                const TextStyle(fontSize: 14)),
-                                        Text(
-                                          c['created_at'] != null
-                                              ? _getTimeAgo(DateTime.parse(
-                                                  c['created_at']))
-                                              : '',
-                                          style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black45),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: commentController,
-                      decoration: const InputDecoration(
-                        hintText: 'Write your comment...',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final comment = commentController.text.trim();
-                            if (comment.isNotEmpty) {
-                              await _addComment(postId, comment);
-                              Navigator.pop(context);
-                              // Reopen dialog to refresh comments
-                              Future.delayed(const Duration(milliseconds: 200),
-                                  () {
-                                _showCommentDialog(postId);
-                              });
-                            }
-                          },
-                          child: const Text('Post Comment'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // Show create post dialog
   void _showCreatePostDialog() {
     final TextEditingController titleController = TextEditingController();
@@ -726,9 +582,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                     MaterialPageRoute(
                                       builder: (context) => PostDetailScreen(
                                         post: post,
-                                        isLiked: _likedPostIds.contains(post['id']),
-                                        onLike: () => _toggleLikePost(post['id']),
-                                        onComment: () => _showCommentDialog(post['id']),
+                                        isLiked:
+                                            _likedPostIds.contains(post['id']),
+                                        onLike: () =>
+                                            _toggleLikePost(post['id']),
                                         onShare: () {
                                           // TODO: Implement share functionality
                                         },
@@ -745,13 +602,15 @@ class _FeedScreenState extends State<FeedScreen> {
                                     borderRadius: BorderRadius.circular(18),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: colorScheme.primary.withOpacity(0.08),
+                                        color: colorScheme.primary
+                                            .withOpacity(0.08),
                                         blurRadius: 16,
                                         offset: const Offset(0, 8),
                                       ),
                                     ],
                                     border: Border.all(
-                                      color: colorScheme.primary.withOpacity(0.18),
+                                      color:
+                                          colorScheme.primary.withOpacity(0.18),
                                       width: 1.2,
                                     ),
                                   ),
@@ -769,9 +628,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                               tag: 'avatar_${post['id']}',
                                               child: CircleAvatar(
                                                 radius: 22,
-                                                backgroundImage:
-                                                    NetworkImage(post['avatar']),
-                                                backgroundColor: colorScheme.primary
+                                                backgroundImage: NetworkImage(
+                                                    post['avatar']),
+                                                backgroundColor: colorScheme
+                                                    .primary
                                                     .withOpacity(0.08),
                                               ),
                                             ),
@@ -791,7 +651,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 ),
                                                 Text(
                                                   post['timestamp'],
-                                                  style: theme.textTheme.bodySmall
+                                                  style: theme
+                                                      .textTheme.bodySmall
                                                       ?.copyWith(
                                                     color: colorScheme.onSurface
                                                         .withOpacity(0.7),
@@ -803,7 +664,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                             Chip(
                                               label: Text(
                                                 post['department'],
-                                                style: theme.textTheme.labelLarge
+                                                style: theme
+                                                    .textTheme.labelLarge
                                                     ?.copyWith(
                                                   color: colorScheme.onPrimary,
                                                   fontWeight: FontWeight.w600,
@@ -837,8 +699,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                           post['content'],
                                           maxLines: 6,
                                           overflow: TextOverflow.ellipsis,
-                                          style:
-                                              theme.textTheme.bodyLarge?.copyWith(
+                                          style: theme.textTheme.bodyLarge
+                                              ?.copyWith(
                                             color: colorScheme.onSurface,
                                           ),
                                         ),
@@ -848,16 +710,19 @@ class _FeedScreenState extends State<FeedScreen> {
                                           children: [
                                             IconButton(
                                               icon: Icon(
-                                                _likedPostIds.contains(post['id'])
+                                                _likedPostIds
+                                                        .contains(post['id'])
                                                     ? Icons.thumb_up_alt
-                                                    : Icons.thumb_up_alt_outlined,
+                                                    : Icons
+                                                        .thumb_up_alt_outlined,
                                                 color: _likedPostIds
                                                         .contains(post['id'])
                                                     ? colorScheme.primary
                                                     : colorScheme.primary
                                                         .withOpacity(0.5),
                                               ),
-                                              onPressed: () => _toggleLikePost(post['id']),
+                                              onPressed: () =>
+                                                  _toggleLikePost(post['id']),
                                               visualDensity:
                                                   VisualDensity.compact,
                                             ),
@@ -873,7 +738,27 @@ class _FeedScreenState extends State<FeedScreen> {
                                             IconButton(
                                               icon: const Icon(
                                                   Icons.mode_comment_rounded),
-                                              onPressed: () => _showCommentDialog(post['id']),
+                                              onPressed: () async {
+                                                await Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        PostDetailScreen(
+                                                      post: post,
+                                                      isLiked: _likedPostIds
+                                                          .contains(post['id']),
+                                                      onLike: () =>
+                                                          _toggleLikePost(
+                                                              post['id']),
+                                                      onShare: () {
+                                                        // TODO: Implement share functionality
+                                                      },
+                                                      autoFocusComment: true,
+                                                    ),
+                                                  ),
+                                                );
+                                                _loadPosts();
+                                              },
                                               visualDensity:
                                                   VisualDensity.compact,
                                               color: colorScheme.primary,
@@ -888,8 +773,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                             ),
                                             const Spacer(),
                                             IconButton(
-                                              icon:
-                                                  const Icon(Icons.share_rounded),
+                                              icon: const Icon(
+                                                  Icons.share_rounded),
                                               onPressed: () {},
                                               visualDensity:
                                                   VisualDensity.compact,
