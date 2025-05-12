@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
+import 'project_detail_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -216,207 +217,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       debugPrint('Error fetching project members: $e');
       return [];
     }
-  }
-
-  void _showProjectDetails(Map<String, dynamic> project) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SizedBox(
-          width: 400,
-          child: Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(project['title'] ?? '',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 20)),
-                  const SizedBox(height: 8),
-                  Text(project['description'] ?? '',
-                      style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.school, size: 16),
-                      const SizedBox(width: 4),
-                      Text(project['department']?['name'] ?? '',
-                          style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Progress bar and percentage
-                  Row(
-                    children: [
-                      Expanded(
-                        child: LinearProgressIndicator(
-                          value: (project['progress'] ?? 0.0) as double,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceVariant,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _getStatusColor(project['status'] ?? ''),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Progress: ${((project['progress'] ?? 0.0) * 100).toInt()}%',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Team Members:',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _fetchProjectMembers(project['members'] ?? []),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final members = snapshot.data ?? [];
-                      if (members.isEmpty) {
-                        return const Text('No members',
-                            style: TextStyle(color: Colors.black54));
-                      }
-                      return Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final m in members)
-                            Chip(
-                              avatar: (m['profile'] != null &&
-                                      m['profile']['profilepicture'] != null &&
-                                      (m['profile']['profilepicture'] as String)
-                                          .isNotEmpty)
-                                  ? CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                          m['profile']['profilepicture']),
-                                      radius: 12,
-                                    )
-                                  : CircleAvatar(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      radius: 12,
-                                      child: Text(
-                                        _getInitials(m['name'] ?? 'U'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12),
-                                      ),
-                                    ),
-                              label: Text(m['name'] ?? 'User'),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Project Updates',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _fetchProjectUpdates(project['projectid']),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final updates = snapshot.data ?? [];
-                      if (updates.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Text('No updates yet.',
-                              style: TextStyle(color: Colors.black54)),
-                        );
-                      }
-                      return ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: updates.length,
-                        separatorBuilder: (_, __) => const Divider(height: 16),
-                        itemBuilder: (context, idx) {
-                          final u = updates[idx];
-                          final user = u['user'] ?? {};
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              (user['profile'] != null &&
-                                      user['profile']['profilepicture'] !=
-                                          null &&
-                                      (user['profile']['profilepicture']
-                                              as String)
-                                          .isNotEmpty)
-                                  ? CircleAvatar(
-                                      radius: 16,
-                                      backgroundImage: NetworkImage(
-                                          user['profile']['profilepicture']),
-                                    )
-                                  : CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      child: Text(
-                                        _getInitials(user['name'] ?? 'U'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14),
-                                      ),
-                                    ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(user['name'] ?? 'User',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
-                                    Text(u['content'] ?? '',
-                                        style: const TextStyle(fontSize: 14)),
-                                    Text(
-                                      u['created_at'] != null
-                                          ? u['created_at'].toString()
-                                          : '',
-                                      style: const TextStyle(
-                                          fontSize: 11, color: Colors.black45),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _ProjectUpdateInput(
-                    onSubmit: (content) async {
-                      await _addProjectUpdate(project['projectid'], content);
-                      Navigator.pop(context);
-                      Future.delayed(const Duration(milliseconds: 200), () {
-                        _showProjectDetails(project);
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   String _getInitials(String name) {
@@ -757,7 +557,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 Text(
                                   'No $_selectedStatus projects yet',
                                   style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: colorScheme.onSurface.withOpacity(0.7),
+                                    color:
+                                        colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -784,21 +585,37 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: InkWell(
-                                  onTap: () {
-                                    _showProjectDetails(project);
+                                  onTap: () async {
+                                    final userId = Supabase.instance.client.auth
+                                            .currentUser?.id ??
+                                        '';
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ProjectDetailScreen(
+                                          project: project,
+                                          currentUserId: userId,
+                                          allDepartments: _departments,
+                                        ),
+                                      ),
+                                    );
                                   },
                                   borderRadius: BorderRadius.circular(12),
                                   child: Padding(
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Expanded(
                                               child: Text(
                                                 project['title'] ?? '',
-                                                style: theme.textTheme.titleMedium?.copyWith(
+                                                style: theme
+                                                    .textTheme.titleMedium
+                                                    ?.copyWith(
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -806,22 +623,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                             Chip(
                                               label: Text(
                                                 project['status'] ?? '',
-                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                style: theme
+                                                    .textTheme.labelSmall
+                                                    ?.copyWith(
                                                   color: colorScheme.onPrimary,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              backgroundColor: _getStatusColor(project['status'] ?? ''),
+                                              backgroundColor: _getStatusColor(
+                                                  project['status'] ?? ''),
                                               padding: EdgeInsets.zero,
-                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           project['description'] ?? '',
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: colorScheme.onSurface.withOpacity(0.7),
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            color: colorScheme.onSurface
+                                                .withOpacity(0.7),
                                           ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
@@ -836,9 +660,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              project['department']?['name'] ?? '',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: colorScheme.onSurface.withOpacity(0.7),
+                                              project['department']?['name'] ??
+                                                  '',
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.7),
                                               ),
                                             ),
                                             const Spacer(),
@@ -850,34 +677,45 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                             const SizedBox(width: 4),
                                             Text(
                                               project['deadline'] ?? '',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: colorScheme.onSurface.withOpacity(0.7),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.7),
                                               ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 16),
                                         LinearProgressIndicator(
-                                          value: (project['progress'] ?? 0.0) as double,
-                                          backgroundColor: colorScheme.surfaceVariant,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            _getStatusColor(project['status'] ?? ''),
+                                          value: (project['progress'] ?? 0.0)
+                                              as double,
+                                          backgroundColor:
+                                              colorScheme.surfaceVariant,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            _getStatusColor(
+                                                project['status'] ?? ''),
                                           ),
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               'Progress: ${((project['progress'] ?? 0.0) * 100).toInt()}%',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: colorScheme.onSurface.withOpacity(0.7),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.7),
                                               ),
                                             ),
                                             Text(
                                               '${(project['members'] as List?)?.length ?? 0} members',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: colorScheme.onSurface.withOpacity(0.7),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.7),
                                               ),
                                             ),
                                           ],
@@ -890,26 +728,47 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                               height: 32,
                                               child: Stack(
                                                 children: [
-                                                  for (int i = 0; i < (project['member_infos'] as List).length && i < 3; i++)
+                                                  for (int i = 0;
+                                                      i <
+                                                              (project['member_infos']
+                                                                      as List)
+                                                                  .length &&
+                                                          i < 3;
+                                                      i++)
                                                     Positioned(
                                                       left: i * 22.0,
                                                       child: _buildUserAvatar(
-                                                        project['member_infos'][i]['name'],
-                                                        project['member_infos'][i]['profileUrl'],
+                                                        project['member_infos']
+                                                            [i]['name'],
+                                                        project['member_infos']
+                                                            [i]['profileUrl'],
                                                         radius: 16,
                                                       ),
                                                     ),
-                                                  if ((project['members'] as List?)?.length != null && (project['members'] as List).length > 3)
+                                                  if ((project['members']
+                                                                  as List?)
+                                                              ?.length !=
+                                                          null &&
+                                                      (project['members']
+                                                                  as List)
+                                                              .length >
+                                                          3)
                                                     Positioned(
                                                       left: 3 * 22.0,
                                                       child: CircleAvatar(
                                                         radius: 16,
-                                                        backgroundColor: colorScheme.surfaceVariant,
+                                                        backgroundColor:
+                                                            colorScheme
+                                                                .surfaceVariant,
                                                         child: Text(
                                                           '+${(project['members'] as List).length - 3}',
-                                                          style: theme.textTheme.labelSmall?.copyWith(
-                                                            color: colorScheme.onSurface,
-                                                            fontWeight: FontWeight.bold,
+                                                          style: theme.textTheme
+                                                              .labelSmall
+                                                              ?.copyWith(
+                                                            color: colorScheme
+                                                                .onSurface,
+                                                            fontWeight:
+                                                                FontWeight.bold,
                                                           ),
                                                         ),
                                                       ),
@@ -920,13 +779,37 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                             const Spacer(),
                                             TextButton.icon(
                                               onPressed: () {
-                                                _showProjectDetails(project);
+                                                final userId = Supabase
+                                                        .instance
+                                                        .client
+                                                        .auth
+                                                        .currentUser
+                                                        ?.id ??
+                                                    '';
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        ProjectDetailScreen(
+                                                      project: project,
+                                                      currentUserId: userId,
+                                                      allDepartments:
+                                                          _departments,
+                                                    ),
+                                                  ),
+                                                );
                                               },
-                                              icon: const Icon(Icons.arrow_forward, size: 16),
+                                              icon: const Icon(
+                                                  Icons.arrow_forward,
+                                                  size: 16),
                                               label: const Text('Details'),
                                               style: TextButton.styleFrom(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                                visualDensity: VisualDensity.compact,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 4),
+                                                visualDensity:
+                                                    VisualDensity.compact,
                                               ),
                                             ),
                                           ],
@@ -954,7 +837,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 class _ProjectUpdateInput extends StatefulWidget {
   final Future<void> Function(String content) onSubmit;
 
-  const _ProjectUpdateInput({required this.onSubmit, Key? key}) : super(key: key);
+  const _ProjectUpdateInput({required this.onSubmit, Key? key})
+      : super(key: key);
 
   @override
   State<_ProjectUpdateInput> createState() => _ProjectUpdateInputState();
@@ -970,7 +854,11 @@ class _ProjectUpdateInputState extends State<_ProjectUpdateInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Add Update:', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text('Add Update:',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Row(
           children: [
