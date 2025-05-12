@@ -689,82 +689,104 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isMe) ...[
-            _buildAvatar(message),
-            const SizedBox(width: 12),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isMe ? myBubble : otherUserBubble,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isMe)
-                        Flexible(
-                          child: Text(
-                            message['sender'],
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: otherUserText,
-                              fontSize: 14,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+        children: isMe
+            ? [
+                // My message: bubble on right, no avatar
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: myBubble,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
                         ),
-                      if (_isAdmin)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4.0),
-                          child: Icon(
-                            Icons.more_horiz,
-                            size: 14,
-                            color: isMe
-                                ? myText.withOpacity(0.7)
-                                : otherUserText.withOpacity(0.7),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          message['message'],
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: myText,
+                            fontSize: 16,
                           ),
+                          textAlign: TextAlign.right,
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message['message'],
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: isMe ? myText : otherUserText,
-                      fontSize: 16,
+                        const SizedBox(height: 4),
+                        Text(
+                          message['timestamp'],
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: myText.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message['timestamp'],
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: isMe
-                          ? myText.withOpacity(0.7)
-                          : otherUserText.withOpacity(0.7),
-                      fontSize: 12,
+                ),
+              ]
+            : [
+                // Other user: avatar, bubble on left
+                _buildAvatar(message),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: otherUserBubble,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message['sender'],
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: otherUserText,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          message['message'],
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: otherUserText,
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          message['timestamp'],
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: otherUserText.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
+                ),
+              ],
       ),
     );
   }
