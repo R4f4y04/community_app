@@ -134,7 +134,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
       for (final post in response) {
         // The view already flattened the data structure, so we can access fields directly
-        final DateTime createdAt = DateTime.parse(post['created_at']);
+        final DateTime createdAt = DateTime.parse(post['created_at']).toUtc();
         final String timeAgo = _getTimeAgo(createdAt);
 
         formattedPosts.add({
