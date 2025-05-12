@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -107,7 +108,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     try {
       final response = await supabase
           .from('project_updates')
-          .select('*, user:userid(name, profile:profilepicture)')
+          .select('*, user:userid(name, profile:Profile(ProfilePicture))')
           .eq('projectid', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
@@ -132,13 +133,32 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchProjectMembers(List members) async {
+  Future<List<Map<String, dynamic>>> _fetchProjectMembers(
+      dynamic membersRaw) async {
+    // Ensure membersRaw is a List<String> or List<int>
+    List members;
+    if (membersRaw == null) {
+      members = [];
+    } else if (membersRaw is String) {
+      // Try to decode JSON string
+      try {
+        members = List.from(jsonDecode(membersRaw));
+      } catch (_) {
+        members = [];
+      }
+    } else if (membersRaw is List) {
+      members = membersRaw;
+    } else {
+      members = [];
+    }
     if (members.isEmpty) return [];
     try {
+      debugPrint('Fetching members for: ' + members.toString());
       final response = await supabase
           .from('users')
-          .select('userid, name, profile:profilepicture')
+          .select('userid, name, profile:Profile(ProfilePicture)')
           .inFilter('userid', members);
+      debugPrint('Fetched members: ' + response.toString());
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error fetching project members: $e');
@@ -218,10 +238,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           for (final m in members)
                             Chip(
                               avatar: (m['profile'] != null &&
-                                      (m['profile'] as String).isNotEmpty)
+                                      m['profile']['ProfilePicture'] != null &&
+                                      (m['profile']['ProfilePicture'] as String)
+                                          .isNotEmpty)
                                   ? CircleAvatar(
-                                      backgroundImage:
-                                          NetworkImage(m['profile']),
+                                      backgroundImage: NetworkImage(
+                                          m['profile']['ProfilePicture']),
                                       radius: 12,
                                     )
                                   : CircleAvatar(
@@ -274,11 +296,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               (user['profile'] != null &&
-                                      (user['profile'] as String).isNotEmpty)
+                                      user['profile']['ProfilePicture'] !=
+                                          null &&
+                                      (user['profile']['ProfilePicture']
+                                              as String)
+                                          .isNotEmpty)
                                   ? CircleAvatar(
                                       radius: 16,
-                                      backgroundImage:
-                                          NetworkImage(user['profile']),
+                                      backgroundImage: NetworkImage(
+                                          user['profile']['ProfilePicture']),
                                     )
                                   : CircleAvatar(
                                       radius: 16,
@@ -548,6 +574,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           'ownerid': ownerId,
                         });
                         Navigator.pop(context);
+                        setStateDialog(() {
+                          _isSubmittingProject = false;
+                        });
                         _loadProjects();
                         showSuccessSnackBar(context, 'Project created');
                       } catch (e) {
