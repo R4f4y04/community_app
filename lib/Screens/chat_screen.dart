@@ -28,6 +28,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _hasError = false;
   bool _isDepartmentChat = false;
   String _chatMode = "Global Chat";
+  bool _isSendingMessage = false;
   // User data
   String? _userId;
   String _userName = "User";
@@ -258,7 +259,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   // Send message
   Future<void> _sendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
+    if (_messageController.text.trim().isEmpty || _isSendingMessage) return;
+
+    setState(() {
+      _isSendingMessage = true;
+    });
 
     final messageText = _messageController.text.trim();
     _messageController.clear();
@@ -266,32 +271,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     try {
       if (_isDepartmentChat) {
-        // Department chat is coming soon
         showInfoSnackBar(context, 'Department chat is coming soon');
       } else {
-        // Show sending indicator
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
-        final sendingSnackBar = SnackBar(
-          content: const Row(
-            children: [
-              SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 12),
-              Text('Sending message...'),
-            ],
-          ),
-          backgroundColor: AppColors.purpleLight,
-          duration: const Duration(seconds: 1),
-        );
-
-        scaffoldMessenger.showSnackBar(sendingSnackBar);
-
         // Create timestamp for consistency
         final now = DateTime.now();
         final timestamp = now.toIso8601String();
@@ -331,6 +312,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     } catch (e) {
       print('Error sending message: $e');
       showErrorSnackBar(context, 'Failed to send message');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingMessage = false;
+        });
+      }
     }
   }
 
@@ -464,7 +451,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   enabled:
-                      !_isDepartmentChat, // Disable input in department chat
+                      !_isDepartmentChat && !_isSendingMessage, // Disable input while sending
                   onSubmitted: (_) => _sendMessage(), // Send on enter
                   keyboardType: TextInputType.multiline,
                   maxLines: null, // Allow multiple lines
@@ -475,14 +462,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 24,
-                backgroundColor: _isDepartmentChat
-                    ? AppColors.textSecondary
-                        .withOpacity(0.5) // Dimmed when disabled
+                backgroundColor: _isDepartmentChat || _isSendingMessage
+                    ? AppColors.textSecondary.withOpacity(0.5) // Dimmed when disabled
                     : AppColors.purpleLight,
-                child: IconButton(
-                  icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                  onPressed: _isDepartmentChat ? null : _sendMessage,
-                ),
+                child: _isSendingMessage
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                        onPressed: _isDepartmentChat || _isSendingMessage ? null : _sendMessage,
+                      ),
               ),
             ],
           ),
