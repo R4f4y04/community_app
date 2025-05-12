@@ -348,46 +348,99 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  // Show create post dialog
-  void _showCreatePostDialog() {
+  // Show create post modal sheet
+  void _showCreatePostModalSheet() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final TextEditingController titleController = TextEditingController();
     final TextEditingController contentController = TextEditingController();
     String selectedDept = _departments.contains(_userDepartment)
         ? _userDepartment
-        : _departments.firstWhere((dept) => dept != "All",
-            orElse: () => "Web Dev");
+        : _departments.firstWhere((dept) => dept != "All", orElse: () => "Web Dev");
+    bool isPosting = false;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: const Text('Create New Post'),
-          content: SingleChildScrollView(
-            child: Column(
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setStateModal) => Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: colorScheme.primary.withOpacity(0.15),
+                      backgroundImage: _avatarUrl.isNotEmpty ? NetworkImage(_avatarUrl) : null,
+                      child: _avatarUrl.isEmpty
+                          ? Icon(Icons.person, color: colorScheme.primary, size: 28)
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Create Post',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: colorScheme.onSurface.withOpacity(0.7)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Title',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: colorScheme.surfaceVariant,
                   ),
+                  style: theme.textTheme.bodyLarge,
+                  textInputAction: TextInputAction.next,
+                  maxLength: 80,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   controller: contentController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Content',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: colorScheme.surfaceVariant,
                   ),
-                  maxLines: 5,
+                  style: theme.textTheme.bodyLarge,
+                  minLines: 4,
+                  maxLines: 8,
+                  maxLength: 1000,
                 ),
-                const SizedBox(height: 16),
-                const Text('Department:'),
-                DropdownButton<String>(
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
                   value: selectedDept,
-                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Department',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: colorScheme.surfaceVariant,
+                  ),
                   items: _departments
                       .where((dept) => dept != "All")
                       .map((dept) => DropdownMenuItem<String>(
@@ -397,67 +450,83 @@ class _FeedScreenState extends State<FeedScreen> {
                       .toList(),
                   onChanged: (value) {
                     if (value != null) {
-                      setStateDialog(() {
+                      setStateModal(() {
                         selectedDept = value;
                       });
                     }
                   },
                 ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.attach_file, color: colorScheme.primary),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Attachments coming soon!')),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Text('Add attachment', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: isPosting
+                        ? null
+                        : () async {
+                            final title = titleController.text.trim();
+                            final content = contentController.text.trim();
+                            if (title.isEmpty || content.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Title and content required.')),
+                              );
+                              return;
+                            }
+                            setStateModal(() => isPosting = true);
+                            try {
+                              final deptResponse = await supabase
+                                  .from('department')
+                                  .select('departmentid')
+                                  .eq('name', selectedDept)
+                                  .maybeSingle();
+                              if (deptResponse == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Department "$selectedDept" not found.')),
+                                );
+                                setStateModal(() => isPosting = false);
+                                return;
+                              }
+                              final departmentId = deptResponse['departmentid'] as int;
+                              await _createNewPost(title, content, departmentId);
+                              Navigator.pop(context);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Error creating post. Please try again.')),
+                              );
+                            } finally {
+                              setStateModal(() => isPosting = false);
+                            }
+                          },
+                    child: isPosting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Post', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final title = titleController.text.trim();
-                final content = contentController.text.trim();
-
-                if (title.isNotEmpty && content.isNotEmpty) {
-                  Navigator.pop(context);
-
-                  // Get department ID from department name
-                  try {
-                    final deptResponse = await supabase
-                        .from('department')
-                        .select('departmentid')
-                        .eq('name', selectedDept)
-                        .maybeSingle();
-
-                    if (deptResponse == null) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  'Department "$selectedDept" not found.')),
-                        );
-                      }
-                      return;
-                    }
-
-                    final departmentId = deptResponse['departmentid'] as int;
-                    await _createNewPost(title, content, departmentId);
-                    debugPrint('Post created for departmentId: $departmentId');
-                  } catch (e) {
-                    debugPrint('Error getting department ID: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content:
-                                Text('Error creating post. Please try again.')),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Post'),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -560,7 +629,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                   style: theme.textTheme.bodyMedium),
                               const SizedBox(height: 8),
                               ElevatedButton.icon(
-                                onPressed: _showCreatePostDialog,
+                                onPressed: _showCreatePostModalSheet,
                                 icon: const Icon(Icons.add),
                                 label: const Text('Create first post'),
                               ),
@@ -795,7 +864,7 @@ class _FeedScreenState extends State<FeedScreen> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: FloatingActionButton(
-            onPressed: _showCreatePostDialog,
+            onPressed: _showCreatePostModalSheet,
             child: const Icon(Icons.add),
           ),
         ),
