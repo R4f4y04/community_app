@@ -24,7 +24,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   bool _hasError = false;
 
   // State for project creation dialog
-  final GlobalKey<FormState> _createFormKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   String? _selectedProjectStatus;
@@ -33,7 +32,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<Map<String, dynamic>> _departments = [];
   List<Map<String, dynamic>> _allUsers = [];
   List<String> _selectedMemberIds = [];
-  bool _isSubmittingProject = false;
   String? _formError;
 
   @override
@@ -265,7 +263,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  void _showCreateProjectDialog() async {
+  void _showCreateProjectModalSheet() async {
     await _fetchDepartmentsAndUsers();
     _titleController.clear();
     _descController.clear();
@@ -274,44 +272,84 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     _selectedDepartmentId = null;
     _selectedMemberIds = [];
     _formError = null;
-    showDialog(
+    bool isSubmitting = false;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: const Text('Create New Project'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _createFormKey,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setStateModal) => SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Create Project',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: colorScheme.onSurface.withOpacity(0.7)),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
                   TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Project Title',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceVariant,
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Title required' : null,
+                    style: theme.textTheme.bodyLarge,
+                    textInputAction: TextInputAction.next,
+                    maxLength: 80,
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Title required' : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _descController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Description',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceVariant,
                     ),
-                    maxLines: 3,
-                    validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Description required'
-                        : null,
+                    style: theme.textTheme.bodyLarge,
+                    minLines: 3,
+                    maxLines: 6,
+                    maxLength: 500,
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Description required' : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Department',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceVariant,
                     ),
                     value: _selectedDepartmentId,
                     items: _departments
@@ -320,15 +358,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               child: Text(d['name'] ?? 'Unknown'),
                             ))
                         .toList(),
-                    onChanged: (v) =>
-                        setStateDialog(() => _selectedDepartmentId = v),
+                    onChanged: (v) => setStateModal(() => _selectedDepartmentId = v),
                     validator: (v) => v == null ? 'Select department' : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Status',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceVariant,
                     ),
                     value: _selectedProjectStatus,
                     items: _statuses
@@ -338,11 +377,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               child: Text(s),
                             ))
                         .toList(),
-                    onChanged: (v) =>
-                        setStateDialog(() => _selectedProjectStatus = v),
+                    onChanged: (v) => setStateModal(() => _selectedProjectStatus = v),
                     validator: (v) => v == null ? 'Select status' : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       const Text('Progress:'),
@@ -353,104 +391,123 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           max: 1.0,
                           divisions: 20,
                           label: '${(_selectedProgress * 100).toInt()}%',
-                          onChanged: (v) =>
-                              setStateDialog(() => _selectedProgress = v),
+                          onChanged: (v) => setStateModal(() => _selectedProgress = v),
                         ),
                       ),
                       Text('${(_selectedProgress * 100).toInt()}%'),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Team Members',
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Wrap(
-                      spacing: 8,
-                      children: _allUsers.map((u) {
-                        final isSelected =
-                            _selectedMemberIds.contains(u['userid']);
-                        return FilterChip(
-                          label: Text(u['name'] ?? 'User'),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setStateDialog(() {
-                              if (selected) {
-                                _selectedMemberIds.add(u['userid']);
-                              } else {
-                                _selectedMemberIds.remove(u['userid']);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
+                  const SizedBox(height: 14),
+                  Text('Team Members', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: _allUsers.map((u) {
+                      final isSelected = _selectedMemberIds.contains(u['userid']);
+                      final name = u['name'] ?? 'User';
+                      return FilterChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 10,
+                              backgroundColor: colorScheme.primary.withOpacity(0.15),
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(name),
+                          ],
+                        ),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setStateModal(() {
+                            if (selected) {
+                              _selectedMemberIds.add(u['userid']);
+                            } else {
+                              _selectedMemberIds.remove(u['userid']);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
                   ),
                   if (_formError != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(_formError!,
-                          style: const TextStyle(color: Colors.red)),
+                      child: Text(_formError!, style: const TextStyle(color: Colors.red)),
                     ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              if (_titleController.text.trim().isEmpty ||
+                                  _descController.text.trim().isEmpty) {
+                                setStateModal(() => _formError = 'Title and description required');
+                                return;
+                              }
+                              if (_selectedDepartmentId == null) {
+                                setStateModal(() => _formError = 'Select a department');
+                                return;
+                              }
+                              if (_selectedProjectStatus == null) {
+                                setStateModal(() => _formError = 'Select a status');
+                                return;
+                              }
+                              if (_selectedMemberIds.isEmpty) {
+                                setStateModal(() => _formError = 'Select at least one member');
+                                return;
+                              }
+                              setStateModal(() {
+                                isSubmitting = true;
+                                _formError = null;
+                              });
+                              final ownerId = supabase.auth.currentUser?.id;
+                              try {
+                                await supabase.from('project').insert({
+                                  'title': _titleController.text.trim(),
+                                  'description': _descController.text.trim(),
+                                  'departmentid': _selectedDepartmentId,
+                                  'status': _selectedProjectStatus,
+                                  'progress': _selectedProgress,
+                                  'members': _selectedMemberIds,
+                                  'ownerid': ownerId,
+                                });
+                                Navigator.pop(context);
+                                _loadProjects();
+                                showSuccessSnackBar(context, 'Project created');
+                              } catch (e) {
+                                setStateModal(() {
+                                  _formError = 'Error creating project: \\n${e.toString()}';
+                                  isSubmitting = false;
+                                });
+                              }
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: _isSubmittingProject
-                  ? null
-                  : () async {
-                      if (!_createFormKey.currentState!.validate()) return;
-                      if (_selectedMemberIds.isEmpty) {
-                        setStateDialog(
-                            () => _formError = 'Select at least one member');
-                        return;
-                      }
-                      setStateDialog(() {
-                        _isSubmittingProject = true;
-                        _formError = null;
-                      });
-                      final ownerId = supabase.auth.currentUser?.id;
-                      try {
-                        await supabase.from('project').insert({
-                          'title': _titleController.text.trim(),
-                          'description': _descController.text.trim(),
-                          'departmentid': _selectedDepartmentId,
-                          'status': _selectedProjectStatus,
-                          'progress': _selectedProgress,
-                          'members': _selectedMemberIds,
-                          'ownerid': ownerId,
-                        });
-                        Navigator.pop(context);
-                        setStateDialog(() {
-                          _isSubmittingProject = false;
-                        });
-                        _loadProjects();
-                        showSuccessSnackBar(context, 'Project created');
-                      } catch (e) {
-                        setStateDialog(() {
-                          _formError =
-                              'Error creating project: ${e.toString()}';
-                          _isSubmittingProject = false;
-                        });
-                      }
-                    },
-              child: _isSubmittingProject
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Create'),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -563,7 +620,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 ElevatedButton.icon(
-                                  onPressed: _showCreateProjectDialog,
+                                  onPressed: _showCreateProjectModalSheet,
                                   icon: const Icon(Icons.add),
                                   label: const Text('Create Project'),
                                   style: ElevatedButton.styleFrom(
@@ -825,7 +882,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateProjectDialog,
+        onPressed: _showCreateProjectModalSheet,
         backgroundColor: colorScheme.primary,
         child: const Icon(Icons.add),
         tooltip: 'Create Project',
