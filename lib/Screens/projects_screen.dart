@@ -59,8 +59,30 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           .from('project')
           .select('*, department:departmentid(name), owner:ownerid(name)')
           .order('projectid', ascending: false);
+      List<Map<String, dynamic>> projects =
+          List<Map<String, dynamic>>.from(response);
+      // Prefetch member info for avatars (first 3 members)
+      for (final project in projects) {
+        final memberIds = (project['members'] as List?)?.take(3).toList() ?? [];
+        if (memberIds.isNotEmpty) {
+          final membersResp = await supabase
+              .from('users')
+              .select('userid, name, profile:profile(profilepicture)')
+              .inFilter('userid', memberIds);
+          final infos = <Map<String, String>>[];
+          for (final m in membersResp) {
+            infos.add({
+              'name': m['name'] ?? 'User',
+              'profileUrl': m['profile']?['profilepicture'] ?? '',
+            });
+          }
+          project['member_infos'] = infos;
+        } else {
+          project['member_infos'] = [];
+        }
+      }
       setState(() {
-        _projects = List<Map<String, dynamic>>.from(response);
+        _projects = projects;
         _isLoading = false;
       });
     } catch (e) {
@@ -238,12 +260,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           for (final m in members)
                             Chip(
                               avatar: (m['profile'] != null &&
-                                      m['profile']['ProfilePicture'] != null &&
-                                      (m['profile']['ProfilePicture'] as String)
+                                      m['profile']['profilepicture'] != null &&
+                                      (m['profile']['profilepicture'] as String)
                                           .isNotEmpty)
                                   ? CircleAvatar(
                                       backgroundImage: NetworkImage(
-                                          m['profile']['ProfilePicture']),
+                                          m['profile']['profilepicture']),
                                       radius: 12,
                                     )
                                   : CircleAvatar(
@@ -296,15 +318,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               (user['profile'] != null &&
-                                      user['profile']['ProfilePicture'] !=
+                                      user['profile']['profilepicture'] !=
                                           null &&
-                                      (user['profile']['ProfilePicture']
+                                      (user['profile']['profilepicture']
                                               as String)
                                           .isNotEmpty)
                                   ? CircleAvatar(
                                       radius: 16,
                                       backgroundImage: NetworkImage(
-                                          user['profile']['ProfilePicture']),
+                                          user['profile']['profilepicture']),
                                     )
                                   : CircleAvatar(
                                       radius: 16,
@@ -845,31 +867,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                                 children: [
                                                   for (int i = 0;
                                                       i <
-                                                              (project['members']
+                                                              (project['member_infos']
                                                                       as List)
                                                                   .length &&
                                                           i < 3;
                                                       i++)
                                                     Positioned(
                                                       left: i * 22.0,
-                                                      child: CircleAvatar(
+                                                      child: _buildUserAvatar(
+                                                        project['member_infos']
+                                                            [i]['name'],
+                                                        project['member_infos']
+                                                            [i]['profileUrl'],
                                                         radius: 16,
-                                                        backgroundColor:
-                                                            Colors.primaries[i %
-                                                                Colors.primaries
-                                                                    .length],
-                                                        child: Text(
-                                                          (project['members'][i]
-                                                                  as String)
-                                                              .substring(0, 1),
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
                                                       ),
                                                     ),
                                                   if ((project['members']
