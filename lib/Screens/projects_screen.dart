@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
@@ -255,18 +254,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       Expanded(
                         child: LinearProgressIndicator(
                           value: (project['progress'] ?? 0.0) as double,
-                          backgroundColor: AppColors.surfaceVariant,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceVariant,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             _getStatusColor(project['status'] ?? ''),
                           ),
-                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         'Progress: ${((project['progress'] ?? 0.0) * 100).toInt()}%',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface),
                       ),
                     ],
                   ),
@@ -300,9 +301,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                       radius: 12,
                                     )
                                   : CircleAvatar(
-                                      backgroundColor: Colors.primaries[
-                                          (m['name'] ?? '').hashCode %
-                                              Colors.primaries.length],
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                       radius: 12,
                                       child: Text(
                                         _getInitials(m['name'] ?? 'U'),
@@ -361,9 +362,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                     )
                                   : CircleAvatar(
                                       radius: 16,
-                                      backgroundColor: Colors.primaries[
-                                          (user['name'] ?? '').hashCode %
-                                              Colors.primaries.length],
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                       child: Text(
                                         _getInitials(user['name'] ?? 'U'),
                                         style: const TextStyle(
@@ -452,7 +453,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppColors.purpleLight,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       child: Text(
         initials,
         style: TextStyle(
@@ -654,22 +655,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Color _getStatusColor(String status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case 'Ongoing':
-        return Colors.blue;
+        return colorScheme.primary;
       case 'Completed':
-        return Colors.green;
+        return colorScheme.secondary;
       case 'Planning':
-        return Colors.orange;
+        return colorScheme.tertiary;
       default:
-        return AppColors.purpleLight;
+        return colorScheme.surfaceVariant;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
@@ -691,11 +695,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         _selectedStatus = _statuses[index];
                       });
                     },
-                    selectedColor: AppColors.purpleLight,
-                    backgroundColor: AppColors.surfaceVariant,
+                    selectedColor: colorScheme.primary,
+                    backgroundColor: colorScheme.surfaceVariant,
                     labelStyle: TextStyle(
-                      color:
-                          isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurface.withOpacity(0.7),
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
@@ -713,17 +718,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
                               size: 80,
-                              color: AppColors.textSecondary,
+                              color: colorScheme.error,
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'Failed to load projects',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 16,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -731,6 +735,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               onPressed: _loadProjects,
                               icon: const Icon(Icons.refresh),
                               label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -740,17 +748,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.work_outline,
                                   size: 80,
-                                  color: AppColors.textSecondary,
+                                  color: colorScheme.onSurface.withOpacity(0.5),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No $_selectedStatus projects yet',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 16,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -758,6 +765,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   onPressed: _showCreateProjectDialog,
                                   icon: const Icon(Icons.add),
                                   label: const Text('Create Project'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -780,44 +791,37 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   child: Padding(
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                project['title'],
-                                                style: const TextStyle(
+                                                project['title'] ?? '',
+                                                style: theme.textTheme.titleMedium?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 18,
                                                 ),
                                               ),
                                             ),
                                             Chip(
                                               label: Text(
-                                                project['status'],
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.white,
+                                                project['status'] ?? '',
+                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                  color: colorScheme.onPrimary,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              backgroundColor: _getStatusColor(
-                                                  project['status']),
+                                              backgroundColor: _getStatusColor(project['status'] ?? ''),
                                               padding: EdgeInsets.zero,
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
+                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          project['description'],
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.textSecondary,
+                                          project['description'] ?? '',
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            color: colorScheme.onSurface.withOpacity(0.7),
                                           ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
@@ -825,65 +829,55 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                         const SizedBox(height: 16),
                                         Row(
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.school,
                                               size: 16,
-                                              color: AppColors.textSecondary,
+                                              color: colorScheme.primary,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              project['department']?['name'] ??
-                                                  '',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                              project['department']?['name'] ?? '',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: colorScheme.onSurface.withOpacity(0.7),
                                               ),
                                             ),
                                             const Spacer(),
-                                            const Icon(
+                                            Icon(
                                               Icons.calendar_today,
                                               size: 16,
-                                              color: AppColors.textSecondary,
+                                              color: colorScheme.primary,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
                                               project['deadline'] ?? '',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: colorScheme.onSurface.withOpacity(0.7),
                                               ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 16),
                                         LinearProgressIndicator(
-                                          value: project['progress'] as double,
-                                          backgroundColor:
-                                              AppColors.surfaceVariant,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            _getStatusColor(project['status']),
+                                          value: (project['progress'] ?? 0.0) as double,
+                                          backgroundColor: colorScheme.surfaceVariant,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            _getStatusColor(project['status'] ?? ''),
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(2),
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'Progress: ${(project['progress'] * 100).toInt()}%',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                              'Progress: ${((project['progress'] ?? 0.0) * 100).toInt()}%',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: colorScheme.onSurface.withOpacity(0.7),
                                               ),
                                             ),
                                             Text(
-                                              '${project['members'].length} members',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                              '${(project['members'] as List?)?.length ?? 0} members',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: colorScheme.onSurface.withOpacity(0.7),
                                               ),
                                             ),
                                           ],
@@ -896,43 +890,26 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                               height: 32,
                                               child: Stack(
                                                 children: [
-                                                  for (int i = 0;
-                                                      i <
-                                                              (project['member_infos']
-                                                                      as List)
-                                                                  .length &&
-                                                          i < 3;
-                                                      i++)
+                                                  for (int i = 0; i < (project['member_infos'] as List).length && i < 3; i++)
                                                     Positioned(
                                                       left: i * 22.0,
                                                       child: _buildUserAvatar(
-                                                        project['member_infos']
-                                                            [i]['name'],
-                                                        project['member_infos']
-                                                            [i]['profileUrl'],
+                                                        project['member_infos'][i]['name'],
+                                                        project['member_infos'][i]['profileUrl'],
                                                         radius: 16,
                                                       ),
                                                     ),
-                                                  if ((project['members']
-                                                              as List)
-                                                          .length >
-                                                      3)
+                                                  if ((project['members'] as List?)?.length != null && (project['members'] as List).length > 3)
                                                     Positioned(
                                                       left: 3 * 22.0,
                                                       child: CircleAvatar(
                                                         radius: 16,
-                                                        backgroundColor:
-                                                            AppColors
-                                                                .surfaceVariant,
+                                                        backgroundColor: colorScheme.surfaceVariant,
                                                         child: Text(
                                                           '+${(project['members'] as List).length - 3}',
-                                                          style:
-                                                              const TextStyle(
-                                                            color: AppColors
-                                                                .textPrimary,
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.bold,
+                                                          style: theme.textTheme.labelSmall?.copyWith(
+                                                            color: colorScheme.onSurface,
+                                                            fontWeight: FontWeight.bold,
                                                           ),
                                                         ),
                                                       ),
@@ -945,17 +922,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                               onPressed: () {
                                                 _showProjectDetails(project);
                                               },
-                                              icon: const Icon(
-                                                  Icons.arrow_forward,
-                                                  size: 16),
+                                              icon: const Icon(Icons.arrow_forward, size: 16),
                                               label: const Text('Details'),
                                               style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 4),
-                                                visualDensity:
-                                                    VisualDensity.compact,
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                visualDensity: VisualDensity.compact,
                                               ),
                                             ),
                                           ],
@@ -972,7 +943,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateProjectDialog,
-        backgroundColor: AppColors.purpleLight,
+        backgroundColor: colorScheme.primary,
         child: const Icon(Icons.add),
         tooltip: 'Create Project',
       ),
@@ -983,8 +954,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 class _ProjectUpdateInput extends StatefulWidget {
   final Future<void> Function(String content) onSubmit;
 
-  const _ProjectUpdateInput({required this.onSubmit, Key? key})
-      : super(key: key);
+  const _ProjectUpdateInput({required this.onSubmit, Key? key}) : super(key: key);
 
   @override
   State<_ProjectUpdateInput> createState() => _ProjectUpdateInputState();
@@ -996,11 +966,11 @@ class _ProjectUpdateInputState extends State<_ProjectUpdateInput> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Add Update:',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        Text('Add Update:', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Row(
           children: [
@@ -1029,6 +999,10 @@ class _ProjectUpdateInputState extends State<_ProjectUpdateInput> {
                       });
                       _controller.clear();
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
               child: _isSubmitting
                   ? const SizedBox(
                       width: 16,

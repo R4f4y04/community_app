@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -174,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
@@ -225,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: ElevatedButton(
                       onPressed: _updateProfile,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryPurple,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
                       child: const Text('Save Changes'),
                     ),
@@ -239,23 +238,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Profile view mode
   Widget _buildProfileView() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     String initials = (_userData?['name'] ?? 'User')
         .split(' ')
         .map((e) => e.isNotEmpty ? e[0] : '')
         .join('')
         .toUpperCase();
-
     if (initials.length > 2) {
       initials = initials.substring(0, 2);
     }
-
-    // Validate profile image URL more strictly
     bool hasValidImageUrl = _profileImageUrl != null &&
         _profileImageUrl!.isNotEmpty &&
         Uri.parse(_profileImageUrl!).hasScheme &&
         (Uri.parse(_profileImageUrl!).scheme == 'http' ||
             Uri.parse(_profileImageUrl!).scheme == 'https');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -270,15 +267,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   tag: 'profileAvatar',
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundColor: AppColors.purpleLight,
+                    backgroundColor: colorScheme.primary,
                     backgroundImage: hasValidImageUrl
                         ? NetworkImage(_profileImageUrl!)
                         : null,
                     child: !hasValidImageUrl
                         ? Text(
                             initials,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: colorScheme.onPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 36,
                             ),
@@ -290,25 +287,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Name
                 Text(
                   _userData?['name'] ?? 'User',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 // Department
                 Text(
                   _departmentData?['name'] ?? 'Department',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 // Email
                 Text(
                   _userData?['email'] ?? 'email@example.com',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 // Admin Badge
@@ -317,29 +314,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryPurple,
+                      color: colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryPurple.withOpacity(0.4),
+                          color: colorScheme.primary.withOpacity(0.4),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.admin_panel_settings,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                           size: 18,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Administrator',
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -350,36 +347,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 32),
-
           // Bio section
           if (_profileData?['bio'] != null && _profileData?['bio'].isNotEmpty)
-            _buildProfileSection(
-              'About Me',
-              _profileData?['bio'] ?? '',
-            ),
-
+            _buildProfileSection('About Me', _profileData?['bio'] ?? ''),
           // Institute section
           if (_profileData?['institute'] != null &&
               _profileData?['institute'].isNotEmpty)
-            _buildProfileSection(
-              'Institute',
-              _profileData?['institute'] ?? '',
-            ),
-
+            _buildProfileSection('Institute', _profileData?['institute'] ?? ''),
           // Role section
           if (_profileData?['role'] != null && _profileData?['role'].isNotEmpty)
-            _buildProfileSection(
-              'Role',
-              _profileData?['role'] ?? '',
-            ),
-
+            _buildProfileSection('Role', _profileData?['role'] ?? ''),
           // Degree details section
           if (_profileData?['degreedetails'] != null &&
               _profileData?['degreedetails'].isNotEmpty)
             _buildProfileSection(
-              'Degree Details',
-              _profileData?['degreedetails'] ?? '',
-            ),
+                'Degree Details', _profileData?['degreedetails'] ?? ''),
         ],
       ),
     );
@@ -388,23 +370,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Helper method to build a profile section
   Widget _buildProfileSection(String title, String content,
       {bool isHighlighted = false}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
+          style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.purpleLight,
+            color: isHighlighted ? colorScheme.primary : colorScheme.primary,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           content,
-          style: TextStyle(
-            fontSize: 16,
-            color: title == 'Role' ? AppColors.primaryPurple : null,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color:
+                title == 'Role' ? colorScheme.primary : colorScheme.onSurface,
             fontWeight: title == 'Role' ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -428,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: AppColors.purpleLight,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     backgroundImage: (_profileImageUrl != null &&
                             _profileImageUrl!.isNotEmpty &&
                             Uri.parse(_profileImageUrl!).hasScheme &&
@@ -469,10 +452,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Name field
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person, color: AppColors.purpleLight),
+                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person,
+                    color: Theme.of(context).colorScheme.primary),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -486,11 +470,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Bio field
             TextFormField(
               controller: _bioController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Bio',
-                border: OutlineInputBorder(),
-                prefixIcon:
-                    Icon(Icons.description, color: AppColors.purpleLight),
+                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.description,
+                    color: Theme.of(context).colorScheme.primary),
               ),
               maxLines: 3,
             ),
@@ -499,10 +483,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Institute field
             TextFormField(
               controller: _instituteController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Institute',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.school, color: AppColors.purpleLight),
+                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.school,
+                    color: Theme.of(context).colorScheme.primary),
               ),
             ),
             const SizedBox(height: 16),
@@ -510,10 +495,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Role field
             TextFormField(
               controller: _roleController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Role',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.work, color: AppColors.purpleLight),
+                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.work,
+                    color: Theme.of(context).colorScheme.primary),
               ),
             ),
             const SizedBox(height: 16),
@@ -521,10 +507,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Degree details field
             TextFormField(
               controller: _degreeDetailsController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Degree Details',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.school, color: AppColors.purpleLight),
+                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.school,
+                    color: Theme.of(context).colorScheme.primary),
               ),
               maxLines: 2,
             ),

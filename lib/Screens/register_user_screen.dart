@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -129,8 +128,10 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Register New User'),
       ),
@@ -143,33 +144,26 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
-                    const Text(
+                    Text(
                       'Create New User Account',
-                      style: TextStyle(
-                        fontSize: 22,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.purpleLight,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Enter the details to register a new user.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
+                      style: theme.textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 32),
-
-                    // Name Field
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Full Name',
                         prefixIcon:
-                            Icon(Icons.person, color: AppColors.purpleLight),
-                        border: OutlineInputBorder(),
+                            Icon(Icons.person, color: colorScheme.primary),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -179,22 +173,19 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Email Field
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email Address',
                         prefixIcon:
-                            Icon(Icons.email, color: AppColors.purpleLight),
-                        border: OutlineInputBorder(),
+                            Icon(Icons.email, color: colorScheme.primary),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter an email address';
                         }
-                        // Basic email validation
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                           return 'Please enter a valid email address';
                         }
@@ -202,22 +193,20 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Password Field
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock,
-                            color: AppColors.purpleLight),
+                        prefixIcon:
+                            Icon(Icons.lock, color: colorScheme.primary),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: AppColors.purpleLight,
+                            color: colorScheme.primary,
                           ),
                           onPressed: () {
                             setState(() {
@@ -237,14 +226,12 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Department Dropdown
                     DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Department',
                         prefixIcon:
-                            Icon(Icons.business, color: AppColors.purpleLight),
-                        border: OutlineInputBorder(),
+                            Icon(Icons.business, color: colorScheme.primary),
+                        border: const OutlineInputBorder(),
                       ),
                       value: _selectedDepartmentId,
                       items: _departments.map((department) {
@@ -267,28 +254,25 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Role Field
                     TextFormField(
                       controller: _roleController,
-                      decoration: const InputDecoration(
-                          labelText: 'Role',
-                          prefixIcon:
-                              Icon(Icons.work, color: AppColors.purpleLight),
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. Team Leader, Team Member'),
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        prefixIcon:
+                            Icon(Icons.work, color: colorScheme.primary),
+                        border: const OutlineInputBorder(),
+                        hintText: 'e.g. Team Leader, Team Member',
+                      ),
                     ),
                     const SizedBox(height: 32),
-
-                    // Register Button
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _registerNewUser,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryPurple,
-                          foregroundColor: Colors.white,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                         ),
                         child: _isLoading
                             ? const SizedBox(

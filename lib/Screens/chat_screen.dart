@@ -508,9 +508,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Could not load messages',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -518,7 +520,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.purpleLight,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
           ),
@@ -533,7 +535,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.construction, size: 48, color: AppColors.purpleLight),
+          Icon(Icons.construction,
+              size: 48, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text(
             'Department Chat Coming Soon!',
@@ -547,7 +550,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             'We\'re working on implementing department-specific chats'
             '\nfor ${_userDepartmentName.isNotEmpty ? _userDepartmentName : 'your department'}.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
           ),
           const SizedBox(height: 24),
           // Show department ID info - uses the _userDepartmentId field
@@ -555,15 +560,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant.withOpacity(0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceVariant
+                    .withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 'Your Department ID: $_userDepartmentId',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  color: AppColors.textSecondary,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ),
@@ -580,7 +589,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.chat_bubble_outline,
-                  size: 48, color: AppColors.purpleLight.withOpacity(0.7)),
+                  size: 48,
+                  color:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.7)),
               const SizedBox(height: 16),
               const Text(
                 'No messages yet',
@@ -590,9 +601,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Be the first to start the conversation!',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7)),
               ),
             ],
           ))
@@ -637,13 +652,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             dateText,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -662,94 +678,93 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   // Build a message bubble
   Widget _buildMessageBubble(Map<String, dynamic> message) {
-    final isMe = message['isMe'] as bool;
-
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: _isAdmin ? () => _showMessageOptions(message) : null,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isMe) ...[
-                _buildAvatar(message),
-                const SizedBox(width: 12),
-              ],
-              Flexible(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color:
-                        isMe ? AppColors.purpleLight : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bool isMe = message['isMe'] == true;
+    final Color otherUserBubble =
+        colorScheme.primaryContainer.withOpacity(0.85);
+    final Color myBubble = colorScheme.primary;
+    final Color otherUserText = colorScheme.onPrimaryContainer;
+    final Color myText = colorScheme.onPrimary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isMe) ...[
+            _buildAvatar(message),
+            const SizedBox(width: 12),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isMe ? myBubble : otherUserBubble,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
                   ),
-                  child: Column(
-                    crossAxisAlignment: isMe
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!isMe)
-                            Flexible(
-                              child: Text(
-                                message['sender'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          if (_isAdmin)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4.0),
-                              child: Icon(
-                                Icons.more_horiz,
-                                size: 14,
-                                color: isMe
-                                    ? Colors.white70
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message['message'],
-                        style: TextStyle(
-                          color: isMe ? Colors.white : AppColors.textPrimary,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message['timestamp'],
-                        style: TextStyle(
-                          color:
-                              isMe ? Colors.white70 : AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-            ],
+              child: Column(
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isMe)
+                        Flexible(
+                          child: Text(
+                            message['sender'],
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: otherUserText,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      if (_isAdmin)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4.0),
+                          child: Icon(
+                            Icons.more_horiz,
+                            size: 14,
+                            color: isMe
+                                ? myText.withOpacity(0.7)
+                                : otherUserText.withOpacity(0.7),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message['message'],
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isMe ? myText : otherUserText,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message['timestamp'],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isMe
+                          ? myText.withOpacity(0.7)
+                          : otherUserText.withOpacity(0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -758,7 +773,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget _buildAvatar(Map<String, dynamic> message) {
     return CircleAvatar(
       radius: 20,
-      backgroundColor: AppColors.purpleLight.withOpacity(0.7),
+      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
       backgroundImage:
           message['avatar'] != null ? NetworkImage(message['avatar']) : null,
       child: message['avatar'] == null
@@ -806,7 +821,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.copy, color: AppColors.purpleLight),
+              leading: Icon(Icons.copy,
+                  color: Theme.of(context).colorScheme.primary),
               title: const Text('Copy Message Text'),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: message['message']));
@@ -815,8 +831,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.info_outline, color: AppColors.purpleLight),
+              leading: Icon(Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary),
               title: const Text('Message Info'),
               onTap: () {
                 Navigator.pop(context);
@@ -879,15 +895,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

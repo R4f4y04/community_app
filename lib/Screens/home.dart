@@ -310,8 +310,10 @@ class _HomeState extends State<Home> {
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: CurvedNavigationBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        color: theme.cardColor,
+        backgroundColor:
+            Colors.transparent, // Let Scaffold show theme background
+        color: theme.bottomNavigationBarTheme.backgroundColor ??
+            colorScheme.surface,
         buttonBackgroundColor: colorScheme.primary,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),

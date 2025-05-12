@@ -1,6 +1,5 @@
 import 'package:dbms_proj/Screens/home.dart';
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -90,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -104,15 +103,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 120,
                   width: 120,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                    color: Theme.of(context).colorScheme.surfaceVariant,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.purpleLight, width: 2),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.primary, width: 2),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.group,
                       size: 70,
-                      color: AppColors.purpleLight,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Community App',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -128,7 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Sign in to connect with your community',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
                       ),
                 ),
                 const SizedBox(height: 50),
@@ -137,24 +140,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: Theme.of(context).textTheme.bodyLarge,
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
-                    prefixIcon:
-                        const Icon(Icons.email, color: AppColors.purpleLight),
+                    prefixIcon: Icon(Icons.email,
+                        color: Theme.of(context).colorScheme.primary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppColors.surfaceVariant),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.surfaceVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: AppColors.purpleLight, width: 2),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2),
                     ),
                   ),
                 ),
@@ -165,18 +169,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: Theme.of(context).textTheme.bodyLarge,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Enter your password',
-                    prefixIcon:
-                        const Icon(Icons.lock, color: AppColors.purpleLight),
+                    prefixIcon: Icon(Icons.lock,
+                        color: Theme.of(context).colorScheme.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: AppColors.purpleLight,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       onPressed: () {
                         setState(() {
@@ -189,13 +193,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppColors.surfaceVariant),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.surfaceVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: AppColors.purpleLight, width: 2),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2),
                     ),
                   ),
                 ),
@@ -219,10 +224,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Password reset instructions sent to your email');
                       }
                     },
-                    child: const Text(
+                    child: Text(
                       'Forgot Password?',
                       style: TextStyle(
-                        color: AppColors.purpleLight,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -238,10 +243,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryPurple,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       elevation: 5,
-                      shadowColor: AppColors.purpleDark.withOpacity(0.5),
+                      shadowColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -268,9 +276,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Don\'t have an account? ',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7)),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -278,10 +290,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         // You can implement sign up with Supabase in the future
                         showInfoSnackBar(context, 'Sign up coming soon!');
                       },
-                      child: const Text(
+                      child: Text(
                         'Sign Up',
                         style: TextStyle(
-                          color: AppColors.purpleLight,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 import 'package:dbms_proj/util/functions.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -85,7 +84,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
       try {
         final usersCount = await supabase.from('users').count();
-        totalUsers = usersCount ?? 0;
+        totalUsers = usersCount;
         print('Total users count: $totalUsers');
       } catch (e) {
         print('Error counting users: $e');
@@ -93,7 +92,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
       try {
         final messagesCount = await supabase.from('globalchat').count();
-        totalMessages = messagesCount ?? 0;
+        totalMessages = messagesCount;
         print('Total messages count: $totalMessages');
       } catch (e) {
         print('Error counting messages: $e');
@@ -101,7 +100,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
       try {
         final departmentsCount = await supabase.from('department').count();
-        totalDepartments = departmentsCount ?? 0;
+        totalDepartments = departmentsCount;
         print('Total departments count: $totalDepartments');
       } catch (e) {
         print('Error counting departments: $e');
@@ -170,8 +169,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         bottom: TabBar(
@@ -195,7 +196,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _loadData,
-        backgroundColor: AppColors.purpleLight,
+        backgroundColor: colorScheme.primary,
         child: const Icon(Icons.refresh),
       ),
     );
@@ -203,23 +204,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   // Overview tab with statistics and quick actions
   Widget _buildOverviewTab() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'System Overview',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(
-              height:
-                  24), // Stats cards - using a more flexible layout with increased height
+          const SizedBox(height: 24),
           SizedBox(
-            height: 230, // Further increased height to prevent any overflow
+            height: 230,
             child: Column(
               children: [
                 Expanded(
@@ -227,18 +226,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                            'Total Users',
-                            _stats['totalUsers'].toString(),
-                            Icons.people,
-                            AppColors.purpleLight),
+                          'Total Users',
+                          _stats['totalUsers'].toString(),
+                          Icons.people,
+                          colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildStatCard(
-                            'Total Messages',
-                            _stats['totalMessages'].toString(),
-                            Icons.message,
-                            Colors.green),
+                          'Total Messages',
+                          _stats['totalMessages'].toString(),
+                          Icons.message,
+                          Colors.green,
+                        ),
                       ),
                     ],
                   ),
@@ -249,18 +250,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                            'Departments',
-                            _stats['totalDepartments'].toString(),
-                            Icons.business,
-                            Colors.orange),
+                          'Departments',
+                          _stats['totalDepartments'].toString(),
+                          Icons.business,
+                          Colors.orange,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildStatCard(
-                            'Admin Users',
-                            _stats['totalAdmins'].toString(),
-                            Icons.admin_panel_settings,
-                            Colors.blue),
+                          'Admin Users',
+                          _stats['totalAdmins'].toString(),
+                          Icons.admin_panel_settings,
+                          Colors.blue,
+                        ),
                       ),
                     ],
                   ),
@@ -268,24 +271,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               ],
             ),
           ),
-
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Admin Actions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-
-          // Quick action buttons
           Column(
             children: [
               _buildActionButton(
                 'Register New User',
                 Icons.person_add,
-                AppColors.purpleLight,
+                colorScheme.primary,
                 () {
                   Navigator.pushNamed(context, '/register_user');
                 },
@@ -296,7 +294,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 Icons.message,
                 Colors.green,
                 () {
-                  _tabController.animateTo(2); // Switch to Messages tab
+                  _tabController.animateTo(2);
                 },
               ),
               const SizedBox(height: 12),
@@ -305,7 +303,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 Icons.security,
                 Colors.blue,
                 () {
-                  _tabController.animateTo(1); // Switch to Users tab
+                  _tabController.animateTo(1);
                 },
               ),
             ],
@@ -404,7 +402,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               const Spacer(),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 size: 16,
               ),
             ],
@@ -435,7 +433,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
               color: isAdmin
-                  ? AppColors.purpleLight.withOpacity(0.5)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
                   : Colors.transparent,
               width: isAdmin ? 1 : 0,
             ),
@@ -444,8 +442,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor:
-                  isAdmin ? AppColors.purpleLight : AppColors.surfaceVariant,
+              backgroundColor: isAdmin
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.surfaceVariant,
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: const TextStyle(
@@ -471,7 +470,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       child: Text(
                         'Dept: $department',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
                           fontSize: 12,
                         ),
                       ),
@@ -480,7 +482,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       child: Text(
                         'Role: $role',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
                           fontSize: 12,
                         ),
                       ),
@@ -497,7 +502,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.purpleLight,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -590,9 +595,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           Text(
@@ -649,9 +654,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 const SizedBox(width: 8),
                 Text(
                   formattedDate,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
                   ),
                 ),
               ],
@@ -671,7 +679,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   'Message ID: ${message['messageid']}',
                   style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.textSecondary.withOpacity(0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
                   ),
                 ),
               ],

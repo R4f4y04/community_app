@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dbms_proj/util/theme.dart';
 
 /// Custom snackbar utilities for displaying error and success messages
 /// throughout the app with consistent styling.
@@ -110,7 +109,7 @@ void showInfoSnackBar(BuildContext context, String message) {
         ],
       ),
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppColors.primaryPurple,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
