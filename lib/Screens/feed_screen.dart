@@ -621,6 +621,8 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       children: [
         // Department Filter
@@ -643,12 +645,12 @@ class _FeedScreenState extends State<FeedScreen> {
                       _selectedDepartment = _departments[index];
                     });
                   },
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  selectedColor: colorScheme.primary,
+                  backgroundColor: colorScheme.surface,
                   labelStyle: TextStyle(
                     color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurface,
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -657,9 +659,8 @@ class _FeedScreenState extends State<FeedScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   side: BorderSide(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).dividerColor,
+                    color:
+                        isSelected ? colorScheme.primary : theme.dividerColor,
                     width: 1.2,
                   ),
                 ),
@@ -667,30 +668,20 @@ class _FeedScreenState extends State<FeedScreen> {
             },
           ),
         ),
-
         // Posts Feed
         Expanded(
           child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
+              ? const Center(child: CircularProgressIndicator())
               : _hasError
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red,
-                          ),
+                          Icon(Icons.error_outline,
+                              size: 48, color: colorScheme.error),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Error loading posts',
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
+                          Text('Error loading posts',
+                              style: theme.textTheme.bodyLarge),
                           const SizedBox(height: 8),
                           ElevatedButton(
                             onPressed: _loadPosts,
@@ -704,19 +695,13 @@ class _FeedScreenState extends State<FeedScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
-                                Icons.article_outlined,
-                                size: 80,
-                                color: Colors.black38,
-                              ),
+                              Icon(Icons.article_outlined,
+                                  size: 80,
+                                  color:
+                                      colorScheme.onSurface.withOpacity(0.2)),
                               const SizedBox(height: 16),
-                              Text(
-                                'No posts in $_selectedDepartment yet',
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 16,
-                                ),
-                              ),
+                              Text('No posts in $_selectedDepartment yet',
+                                  style: theme.textTheme.bodyMedium),
                               const SizedBox(height: 8),
                               ElevatedButton.icon(
                                 onPressed: _showCreatePostDialog,
@@ -736,21 +721,19 @@ class _FeedScreenState extends State<FeedScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 18),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
+                                  color: theme.cardColor,
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Theme.of(context)
-                                          .colorScheme.primary
-                                          .withOpacity(0.08),
+                                      color:
+                                          colorScheme.primary.withOpacity(0.08),
                                       blurRadius: 16,
                                       offset: const Offset(0, 8),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme.primary
-                                        .withOpacity(0.18),
+                                    color:
+                                        colorScheme.primary.withOpacity(0.18),
                                     width: 1.2,
                                   ),
                                 ),
@@ -768,7 +751,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                             radius: 22,
                                             backgroundImage:
                                                 NetworkImage(post['avatar']),
-                                            backgroundColor: Colors.purple[50],
+                                            backgroundColor: colorScheme.primary
+                                                .withOpacity(0.08),
                                           ),
                                           const SizedBox(width: 14),
                                           Column(
@@ -777,22 +761,19 @@ class _FeedScreenState extends State<FeedScreen> {
                                             children: [
                                               Text(
                                                 post['author'],
-                                                style: TextStyle(
+                                                style: theme
+                                                    .textTheme.titleMedium
+                                                    ?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
+                                                  color: colorScheme.primary,
                                                 ),
                                               ),
                                               Text(
                                                 post['timestamp'],
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                  color: colorScheme.onSurface
                                                       .withOpacity(0.7),
-                                                  fontSize: 12,
                                                 ),
                                               ),
                                             ],
@@ -801,17 +782,14 @@ class _FeedScreenState extends State<FeedScreen> {
                                           Chip(
                                             label: Text(
                                               post['department'],
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary,
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(
+                                                color: colorScheme.onPrimary,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            backgroundColor: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            backgroundColor:
+                                                colorScheme.primary,
                                             padding: EdgeInsets.zero,
                                             materialTapTargetSize:
                                                 MaterialTapTargetSize
@@ -827,22 +805,18 @@ class _FeedScreenState extends State<FeedScreen> {
                                       // Post Content
                                       Text(
                                         post['title'],
-                                        style: TextStyle(
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 19,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 7),
                                       Text(
                                         post['content'],
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                        style:
+                                            theme.textTheme.bodyLarge?.copyWith(
+                                          color: colorScheme.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 18),
@@ -854,14 +828,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                               _likedPostIds.contains(post['id'])
                                                   ? Icons.thumb_up_alt
                                                   : Icons.thumb_up_alt_outlined,
-                                              color: _likedPostIds.contains(
-                                                      post['id'])
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
+                                              color: _likedPostIds
+                                                      .contains(post['id'])
+                                                  ? colorScheme.primary
+                                                  : colorScheme.primary
                                                       .withOpacity(0.5),
                                             ),
                                             onPressed: () =>
@@ -871,10 +841,9 @@ class _FeedScreenState extends State<FeedScreen> {
                                           ),
                                           Text(
                                             '${post['likes']}',
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                              color: colorScheme.primary,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -886,16 +855,13 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 _showCommentDialog(post['id']),
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            color: colorScheme.primary,
                                           ),
                                           Text(
                                             '${post['comments']}',
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                              color: colorScheme.primary,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -906,9 +872,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                             onPressed: () {},
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            color: colorScheme.primary,
                                           ),
                                         ],
                                       ),
@@ -920,7 +884,6 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
                         ),
         ),
-
         // Add Post Button
         Padding(
           padding: const EdgeInsets.all(16.0),

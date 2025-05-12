@@ -140,11 +140,13 @@ class _HomeState extends State<Home> {
   void _showProfileMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 20.0),
           child: Column(
@@ -152,17 +154,16 @@ class _HomeState extends State<Home> {
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundColor: AppColors.purpleLight,
+                backgroundColor: colorScheme.primary.withOpacity(0.2),
                 backgroundImage: _hasValidImageUrl()
                     ? NetworkImage(_getProfileImageWithCacheBusting()!)
                     : null,
                 child: !_hasValidImageUrl()
                     ? Text(
                         _userInitials,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 24,
                         ),
                       )
                     : null,
@@ -170,22 +171,20 @@ class _HomeState extends State<Home> {
               const SizedBox(height: 16),
               Text(
                 _userName,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _departmentName,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 24),
               ListTile(
-                leading: const Icon(Icons.person, color: AppColors.purpleLight),
+                leading: Icon(Icons.person, color: colorScheme.primary),
                 title: const Text('View Profile'),
                 onTap: () async {
                   Navigator.pop(context);
@@ -211,8 +210,7 @@ class _HomeState extends State<Home> {
                 },
               ),
               ListTile(
-                leading:
-                    const Icon(Icons.settings, color: AppColors.purpleLight),
+                leading: Icon(Icons.settings, color: colorScheme.primary),
                 title: const Text('Settings'),
                 onTap: () async {
                   Navigator.pop(context);
@@ -234,8 +232,8 @@ class _HomeState extends State<Home> {
               // Admin Dashboard option (only for admins)
               if (_isAdmin)
                 ListTile(
-                  leading: const Icon(Icons.admin_panel_settings,
-                      color: AppColors.purpleLight),
+                  leading: Icon(Icons.admin_panel_settings,
+                      color: colorScheme.primary),
                   title: const Text('Admin Dashboard'),
                   onTap: () {
                     Navigator.pop(context);
@@ -248,7 +246,7 @@ class _HomeState extends State<Home> {
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.logout, color: AppColors.purpleLight),
+                leading: Icon(Icons.logout, color: colorScheme.primary),
                 title: const Text('Logout'),
                 onTap: () async {
                   await Supabase.instance.client.auth.signOut();
@@ -267,16 +265,21 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(_sectionTitles[_selectedIndex]),
+        title: Text(_sectionTitles[_selectedIndex],
+            style: theme.appBarTheme.titleTextStyle),
         automaticallyImplyLeading: false, // Remove back button
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: theme.appBarTheme.elevation,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: Icon(Icons.search, color: theme.iconTheme.color),
             onPressed: () {
-              // Search functionality
               showInfoSnackBar(context, 'Search feature coming soon!');
             },
           ),
@@ -288,18 +291,15 @@ class _HomeState extends State<Home> {
                 tag: 'profileAvatar',
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.purpleLight,
+                  backgroundColor: colorScheme.primary,
                   backgroundImage: _hasValidImageUrl()
                       ? NetworkImage(_getProfileImageWithCacheBusting()!)
                       : null,
                   child: !_hasValidImageUrl()
                       ? Text(
                           _userInitials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                              fontSize: 12, color: colorScheme.onPrimary),
                         )
                       : null,
                 ),
@@ -310,9 +310,9 @@ class _HomeState extends State<Home> {
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: CurvedNavigationBar(
-        backgroundColor: AppColors.background,
-        color: AppColors.surface,
-        buttonBackgroundColor: AppColors.primaryPurple,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        color: theme.cardColor,
+        buttonBackgroundColor: colorScheme.primary,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),
         index: _selectedIndex,
@@ -321,10 +321,10 @@ class _HomeState extends State<Home> {
             _selectedIndex = index;
           });
         },
-        items: const [
-          Icon(Icons.home, color: Colors.white),
-          Icon(Icons.chat_bubble, color: Colors.white),
-          Icon(Icons.work, color: Colors.white),
+        items: [
+          Icon(Icons.home, color: colorScheme.onPrimary),
+          Icon(Icons.chat_bubble, color: colorScheme.onPrimary),
+          Icon(Icons.work, color: colorScheme.onPrimary),
         ],
       ),
     );

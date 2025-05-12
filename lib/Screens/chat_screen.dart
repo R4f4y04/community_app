@@ -354,15 +354,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       children: [
         // Chat type selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: colorScheme.surface,
             border: Border(
-              bottom: BorderSide(color: AppColors.surfaceVariant, width: 1),
+              bottom: BorderSide(color: colorScheme.surface, width: 1),
             ),
           ),
           child: Row(
@@ -370,10 +372,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             children: [
               Text(
                 _chatMode,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               ElevatedButton.icon(
                 onPressed: _toggleChatMode,
@@ -385,11 +385,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   _isDepartmentChat
                       ? 'Switch to Global'
                       : 'Switch to Department',
-                  style: const TextStyle(fontSize: 12),
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.purpleLight,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
@@ -397,14 +397,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ],
           ),
         ),
-
         // Chat messages
         Expanded(
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.purpleLight),
+                        AlwaysStoppedAnimation<Color>(colorScheme.primary),
                   ),
                 )
               : _hasError
@@ -413,21 +412,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       ? _buildDepartmentChatPlaceholder()
                       : _buildGlobalChatMessages(),
         ),
-
         // Message Input
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: colorScheme.surface,
             border: Border(
-              top: BorderSide(color: AppColors.surfaceVariant, width: 1),
+              top: BorderSide(color: colorScheme.surface, width: 1),
             ),
           ),
           child: Row(
             children: [
               IconButton(
                 icon: const Icon(Icons.attach_file),
-                color: AppColors.purpleLight,
+                color: colorScheme.primary,
                 onPressed: () {
                   showInfoSnackBar(context, 'File attachment coming soon!');
                 },
@@ -436,22 +434,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 child: TextField(
                   controller: _messageController,
                   focusNode: _messageFocusNode,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: theme.textTheme.bodyLarge,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
-                    hintStyle: TextStyle(color: AppColors.textSecondary),
+                    hintStyle: theme.textTheme.bodyMedium,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: AppColors.surfaceVariant,
+                    fillColor: colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                   ),
                   textCapitalization: TextCapitalization.sentences,
-                  enabled:
-                      !_isDepartmentChat && !_isSendingMessage, // Disable input while sending
+                  enabled: !_isDepartmentChat &&
+                      !_isSendingMessage, // Disable input while sending
                   onSubmitted: (_) => _sendMessage(), // Send on enter
                   keyboardType: TextInputType.multiline,
                   maxLines: null, // Allow multiple lines
@@ -463,20 +461,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: _isDepartmentChat || _isSendingMessage
-                    ? AppColors.textSecondary.withOpacity(0.5) // Dimmed when disabled
-                    : AppColors.purpleLight,
+                    ? colorScheme.onSurface.withOpacity(0.2)
+                    : colorScheme.primary,
                 child: _isSendingMessage
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              colorScheme.onPrimary),
                         ),
                       )
                     : IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                        onPressed: _isDepartmentChat || _isSendingMessage ? null : _sendMessage,
+                        icon: Icon(Icons.send,
+                            color: colorScheme.onPrimary, size: 20),
+                        onPressed: _isDepartmentChat || _isSendingMessage
+                            ? null
+                            : _sendMessage,
                       ),
               ),
             ],
