@@ -6,7 +6,6 @@ import 'package:dbms_proj/Screens/feed_screen.dart';
 import 'package:dbms_proj/Screens/chat_screen.dart';
 import 'package:dbms_proj/Screens/projects_screen.dart';
 import 'package:dbms_proj/Screens/profile_screen.dart';
-import 'package:dbms_proj/Screens/register_user_screen.dart';
 import 'package:dbms_proj/Screens/admin_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -219,22 +218,6 @@ class _HomeState extends State<Home> {
                   showInfoSnackBar(context, 'Settings page coming soon!');
                 },
               ),
-              // Register New User option (only for admins)
-              if (_isAdmin)
-                ListTile(
-                  leading: const Icon(Icons.person_add,
-                      color: AppColors.purpleLight),
-                  title: const Text('Register New User'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to register new user screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const RegisterUserScreen()),
-                    );
-                  },
-                ),
               // Admin Dashboard option (only for admins)
               if (_isAdmin)
                 ListTile(
