@@ -135,7 +135,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
       for (final post in response) {
         // The view already flattened the data structure, so we can access fields directly
-        final DateTime createdAt = DateTime.parse(post['created_at']).toUtc();
+        final DateTime createdAt = DateTime.parse(post['created_at']);
         final String timeAgo = _getTimeAgo(createdAt);
 
         formattedPosts.add({
@@ -219,7 +219,7 @@ class _FeedScreenState extends State<FeedScreen> {
   // Helper function to calculate time ago
   String _getTimeAgo(DateTime dateTime) {
     final now = DateTime.now().toUtc();
-    final difference = now.difference(dateTime.toUtc());
+    final difference = now.difference(dateTime);
 
     if (difference.inDays > 365) {
       return '${(difference.inDays / 365).floor()}y ago';
