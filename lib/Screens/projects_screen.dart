@@ -108,7 +108,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     try {
       final response = await supabase
           .from('project_updates')
-          .select('*, user:userid(name, profile:Profile(ProfilePicture))')
+          .select('*, user:userid(name, profile:profile(profilepicture))')
           .eq('projectid', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
