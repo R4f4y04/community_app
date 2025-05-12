@@ -296,16 +296,6 @@ class _HomeState extends State<Home> {
         ],
       ),
       body: _screens[_selectedIndex],
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {
-                // Create a new post
-                showInfoSnackBar(context, 'New post creation coming soon!');
-              },
-              backgroundColor: AppColors.primaryPurple,
-              child: const Icon(Icons.add),
-            )
-          : null,
       bottomNavigationBar: CurvedNavigationBar(
         backgroundColor: AppColors.background,
         color: AppColors.surface,
