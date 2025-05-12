@@ -40,6 +40,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void initState() {
     super.initState();
     _loadProjects();
+    _subscribeToProjectsRealtime();
+  }
+
+  void _subscribeToProjectsRealtime() {
+    final channel = supabase.channel('public:project');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'project',
+          callback: (payload) {
+            _loadProjects();
+          },
+        )
+        .subscribe();
   }
 
   @override
@@ -63,7 +78,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           List<Map<String, dynamic>>.from(response);
       // Prefetch member info for avatars (first 3 members)
       for (final project in projects) {
-        final memberIds = (project['members'] as List?)?.take(3).toList() ?? [];
+        // Ensure members is always a List
+        final membersRaw = project['members'];
+        List memberIds;
+        if (membersRaw == null) {
+          memberIds = [];
+        } else if (membersRaw is String) {
+          try {
+            memberIds = List.from(jsonDecode(membersRaw));
+          } catch (_) {
+            memberIds = [];
+          }
+        } else if (membersRaw is List) {
+          memberIds = membersRaw;
+        } else {
+          memberIds = [];
+        }
+        memberIds = memberIds.take(3).toList();
         if (memberIds.isNotEmpty) {
           final membersResp = await supabase
               .from('users')

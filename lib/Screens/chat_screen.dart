@@ -104,36 +104,30 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  // Subscribe to chat updates
+  // Subscribe to real-time updates for global chat messages
   void _subscribeToGlobalChat() {
+    _chatSubscription?.cancel();
     _chatSubscription = supabase
         .from('globalchat')
         .stream(primaryKey: ['messageid'])
         .order('timestamp')
         .listen((List<Map<String, dynamic>> data) async {
           if (mounted) {
-            // When new messages come in, we need to fetch the full message data with user info
-            // because real-time updates don't include joined tables
+            // When new messages come in, fetch the full message data with user info
             if (data.isNotEmpty) {
               try {
                 // Get the latest message
                 final latestMessage = data.last;
-
                 // Fetch the complete message with user data
-                final completeMessages = await supabase
+                final completeMessage = await supabase
                     .from('globalchat')
                     .select('*, users(*)')
                     .eq('messageid', latestMessage['messageid'])
                     .single();
-
                 // Create a properly formatted message
-                final formattedNewMessage = _formatMessages([completeMessages]);
-
-                // Update messages list by adding the new message
+                final formattedNewMessage = _formatMessages([completeMessage]);
                 setState(() {
                   bool messageExists = false;
-
-                  // Check if the message already exists in the list
                   for (int i = 0; i < _messages.length; i++) {
                     if (_messages[i]['messageid'] ==
                         formattedNewMessage[0]['messageid']) {
@@ -141,19 +135,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       break;
                     }
                   }
-
-                  // Only add if it's a new message
                   if (!messageExists) {
                     _messages.add(formattedNewMessage[0]);
                     _messages
                         .sort((a, b) => a['dateTime'].compareTo(b['dateTime']));
                   }
-
                   _isLoading = false;
                   _hasError = false;
                 });
-
-                // Scroll to bottom on new messages if already near bottom
                 if (_isNearBottom()) {
                   Future.delayed(
                       const Duration(milliseconds: 100), _scrollToBottom);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show PostgresChangeEvent;
 import 'dart:async';
 
 // Get Supabase client instance
@@ -163,10 +165,10 @@ class _FeedScreenState extends State<FeedScreen> {
       });
       debugPrint('Error loading posts: $e');
     }
-  } // Subscribe to real-time updates for posts
+  }
 
+  // Subscribe to real-time updates for posts, comments, and likes
   void _subscribeToPosts() {
-    // With Supabase Flutter v2.x:
     final channel = supabase.channel('schema-db-changes');
 
     channel
@@ -175,7 +177,7 @@ class _FeedScreenState extends State<FeedScreen> {
           schema: 'public',
           table: 'posts',
           callback: (payload) {
-            _loadPosts(); // Reload all posts when a new one is added
+            _loadPosts();
           },
         )
         .onPostgresChanges(
@@ -183,7 +185,7 @@ class _FeedScreenState extends State<FeedScreen> {
           schema: 'public',
           table: 'posts',
           callback: (payload) {
-            _loadPosts(); // Reload all posts when one is updated
+            _loadPosts();
           },
         )
         .onPostgresChanges(
@@ -191,12 +193,18 @@ class _FeedScreenState extends State<FeedScreen> {
           schema: 'public',
           table: 'comments',
           callback: (payload) {
-            // When a comment is added, reload posts to update comment counts
             _loadPosts();
           },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'likes',
+          callback: (payload) {
+            _loadPosts();
+            _fetchLikedPosts();
+          },
         );
-
-    // Subscribe to the channel
     channel.subscribe();
 
     // Create a stream that completes when onDispose is called
@@ -204,8 +212,6 @@ class _FeedScreenState extends State<FeedScreen> {
     controller.onCancel = () {
       channel.unsubscribe();
     };
-
-    // Store a subscription to this stream for cleanup
     _postsSubscription = controller.stream.listen((_) {});
   }
 
